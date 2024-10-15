@@ -6,6 +6,7 @@ const sequelize = require("./util/database");
 const Note = require("./model/note");
 const RecordingLog = require("./model/redording-log");
 const transcriptionRoutes = require("./routes/transcription");
+const noteRoutes = require("./routes/note");
 
 const app = express();
 
@@ -25,8 +26,8 @@ app.use((req, res, next) => {
 
 // app.use('/admin', adminRoutes) // todo
 
-app.use('/transcriptions', transcriptionRoutes);
-// app.use('/notes')
+app.use("/transcriptions", transcriptionRoutes);
+app.use("/notes", noteRoutes);
 
 User.hasMany(Note, { constraints: true, onDelete: "CASCADE" });
 Note.belongsTo(User);
