@@ -10,15 +10,6 @@ const RecordingLog = sequelize.define(
       allowNull: false,
       primaryKey: true,
     },
-    user_id: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: "user",
-        key: "id",
-      },
-      onDelete: "CASCADE",
-    },
     recording_time: {
       type: Sequelize.FLOAT,
       allowNull: false,

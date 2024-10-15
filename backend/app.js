@@ -28,10 +28,10 @@ app.use((req, res, next) => {
 app.use('/transcriptions', transcriptionRoutes);
 // app.use('/notes')
 
-User.hasMany(Note, { foreignKey: "user_id", onDelete: "CASCADE" });
+User.hasMany(Note, { constraints: true, onDelete: "CASCADE" });
 Note.belongsTo(User);
 
-User.hasMany(RecordingLog, { foreignKey: "user_id", onDelete: "CASCADE" });
+User.hasMany(RecordingLog, { constraints: true, onDelete: "CASCADE" });
 RecordingLog.belongsTo(User);
 
 sequelize
