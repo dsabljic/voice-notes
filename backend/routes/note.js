@@ -60,20 +60,17 @@ router.post("/", upload.single("audio"), async (req, res) => {
 });
 
 router.put("/:noteId", async (req, res) => {
-  const id = req.params.noteId;
-  const updatedTitle = req.body.title;
-  const updatedContent = req.body.content;
-  const updatedType = req.body.type;
+  const { noteId } = req.params;
+  const { title, content, type } = req.body;
 
   try {
-    const note = await Note.findByPk(id);
+    const note = await Note.findByPk(noteId);
     if (!note) {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    note.title = updatedTitle;
-    note.content = updatedContent;
-    note.type = updatedType;
+    const updatedFields = { title, content, type };
+    Object.assign(note, updatedFields);
 
     await note.save();
     res.status(200).json({ message: "Note updated successfully" });
