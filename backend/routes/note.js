@@ -1,5 +1,5 @@
 const express = require("express");
-const fs = require("fs");
+const fs = require("fs/promises");
 const multer = require("multer");
 
 const Note = require("../model/note");
@@ -35,13 +35,27 @@ router.post("/", upload.single("audio"), async (req, res) => {
     let transcription;
 
     if (req.file) {
+      console.log(req.file);
       const audioFilePath = req.file.path;
       transcription = await getTranscription(audioFilePath);
+
+      try {
+        await fs.unlink(audioFilePath);
+      } catch (error) {
+        console.error("Failed to delete the uploaded audio file:", err);
+      }
     } else if (req.body.audioData) {
       const audioBuffer = Buffer.from(req.body.audioData, "base64");
       const filePath = `uploads/live_audio_${Date.now()}.mp3`;
-      fs.writeFileSync(filePath, audioBuffer);
+      await fs.writeFile(filePath, audioBuffer);
+
       transcription = await getTranscription(filePath);
+
+      try {
+        await fs.unlink(filePath);
+      } catch (error) {
+        console.error("Failed to delete the uploaded audio file:", err);
+      }
     } else {
       return res.status(400).json({ error: "No audio data provided" });
     }
@@ -75,6 +89,7 @@ router.put("/:noteId", async (req, res) => {
     await note.save();
     res.status(200).json({ message: "Note updated successfully" });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: "Failed to update note" });
   }
 });
