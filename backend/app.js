@@ -1,5 +1,4 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 
 const User = require("./model/user");
 const sequelize = require("./util/database");
@@ -10,7 +9,6 @@ const noteRoutes = require("./routes/note");
 const app = express();
 
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 
 // temp solution before adding user auth
 app.use((req, res, next) => {

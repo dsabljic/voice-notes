@@ -3,7 +3,7 @@ const fs = require("fs/promises");
 const multer = require("multer");
 
 const Note = require("../model/note");
-const { getTranscription } = require("../util/openai-utils");
+const { getTranscription } = require("../util/lemon-fox-transcription");
 
 const router = express.Router();
 
@@ -49,6 +49,13 @@ router.post("/", upload.single("audio"), async (req, res) => {
       return res.status(400).json({ error: "No audio data provided" });
     }
 
+    try {
+      await fs.unlink(audioFilePath);
+      console.log("deleted");
+    } catch (error) {
+      console.error(error);
+    }
+
     const newNote = await Note.create({
       title: req.body.title || "Untitled Note",
       type: req.body.type || "transcription",
@@ -59,14 +66,6 @@ router.post("/", upload.single("audio"), async (req, res) => {
     res.status(201).json({ note: newNote });
   } catch (err) {
     res.status(500).json({ error: "Failed to create note" });
-  } finally {
-    if (audioFilePath) {
-      try {
-        await fs.unlink(audioFilePath);
-      } catch (error) {
-        console.error("Failed to delete the uploaded audio file:", error);
-      }
-    }
   }
 });
 
