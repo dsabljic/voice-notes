@@ -33,29 +33,18 @@ router.get("/:noteId", async (req, res) => {
 router.post("/", upload.single("audio"), async (req, res) => {
   try {
     let transcription;
+    let audioFilePath;
 
     if (req.file) {
       console.log(req.file);
-      const audioFilePath = req.file.path;
+      audioFilePath = req.file.path;
       transcription = await getTranscription(audioFilePath);
-
-      try {
-        await fs.unlink(audioFilePath);
-      } catch (error) {
-        console.error("Failed to delete the uploaded audio file:", err);
-      }
     } else if (req.body.audioData) {
       const audioBuffer = Buffer.from(req.body.audioData, "base64");
-      const filePath = `uploads/live_audio_${Date.now()}.mp3`;
-      await fs.writeFile(filePath, audioBuffer);
+      audioFilePath = `uploads/live_audio_${Date.now()}.mp3`;
+      await fs.writeFile(audioFilePath, audioBuffer);
 
-      transcription = await getTranscription(filePath);
-
-      try {
-        await fs.unlink(filePath);
-      } catch (error) {
-        console.error("Failed to delete the uploaded audio file:", err);
-      }
+      transcription = await getTranscription(audioFilePath);
     } else {
       return res.status(400).json({ error: "No audio data provided" });
     }
@@ -70,6 +59,14 @@ router.post("/", upload.single("audio"), async (req, res) => {
     res.status(201).json({ note: newNote });
   } catch (err) {
     res.status(500).json({ error: "Failed to create note" });
+  } finally {
+    if (audioFilePath) {
+      try {
+        await fs.unlink(audioFilePath);
+      } catch (error) {
+        console.error("Failed to delete the uploaded audio file:", error);
+      }
+    }
   }
 });
 
