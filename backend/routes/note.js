@@ -3,7 +3,10 @@ const fs = require("fs/promises");
 const multer = require("multer");
 
 const Note = require("../model/note");
-const { getTranscription } = require("../util/lemon-fox-transcription");
+const {
+  getTranscription,
+  getDummy,
+} = require("../util/lemon-fox-transcription");
 
 const router = express.Router();
 
