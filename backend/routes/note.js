@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs/promises");
 const multer = require("multer");
 
-const notesController = require("../controllers/notes");
+const notesController = require("../controller/note");
 
 const router = express.Router();
 
