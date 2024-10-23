@@ -50,12 +50,12 @@ By limiting the scope of this MVP I want to:
    - Start the backend (Node.js):
      ```bash
      cd backend
-     npm run dev
+     node app.js
      ```
    - Start the frontend (React):
      ```bash
      cd frontend
-     npm start
+     npm run dev
      ```
 
 4. **Access the app**:

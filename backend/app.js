@@ -1,15 +1,14 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 
 const User = require("./model/user");
 const sequelize = require("./util/database");
 const Note = require("./model/note");
 const RecordingLog = require("./model/redording-log");
-const transcriptionRoutes = require("./routes/transcription");
+const noteRoutes = require("./routes/note");
 
 const app = express();
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
 
 // temp solution before adding user auth
 app.use((req, res, next) => {
@@ -24,9 +23,7 @@ app.use((req, res, next) => {
 });
 
 // app.use('/admin', adminRoutes) // todo
-
-app.use('/transcriptions', transcriptionRoutes);
-// app.use('/notes')
+app.use("/notes", noteRoutes);
 
 User.hasMany(Note, { constraints: true, onDelete: "CASCADE" });
 Note.belongsTo(User);
