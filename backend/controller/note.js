@@ -1,4 +1,11 @@
+const fs = require("fs/promises");
+
 const Note = require("../model/note");
+const {
+  getTranscription,
+  getSummary,
+  getListOfIdeas,
+} = require("../util/lemon-fox-transcription");
 
 exports.getNotes = async (req, res, next) => {
   try {
@@ -22,6 +29,7 @@ exports.getNoteById = async (req, res) => {
 };
 
 exports.createNote = async (req, res) => {
+  const type = req.body.type;
   try {
     let transcription;
     let audioFilePath;
@@ -47,12 +55,32 @@ exports.createNote = async (req, res) => {
       console.error(error);
     }
 
-    const newNote = await Note.create({
-      title: req.body.title || "Untitled Note",
-      type: req.body.type || "transcription",
-      content: transcription,
-      userId: req.user.id,
-    });
+    let newNote;
+
+    if (type === "transcription") {
+      newNote = await Note.create({
+        title: req.body.title || "Untitled Note",
+        type: req.body.type,
+        content: transcription,
+        userId: req.user.id,
+      });
+    } else if (type === "summary") {
+      const summary = await getSummary(transcription);
+      newNote = await Note.create({
+        title: req.body.title || "Untitled Note",
+        type: req.body.type,
+        content: summary,
+        userId: req.user.id,
+      });
+    } else if (type === "list-of-ideas") {
+      const listOfIdeas = await getListOfIdeas(transcription);
+      newNote = await Note.create({
+        title: req.body.title || "Untitled Note",
+        type: req.body.type,
+        content: listOfIdeas,
+        userId: req.user.id,
+      });
+    }
 
     res.status(201).json({ note: newNote });
   } catch (err) {
