@@ -8,8 +8,8 @@ This project is an MVP for a SaaS application that allows users to record their 
 - **Lists**: A list of main ideas extracted from the voice note.
 
 ### Tech Stack
-- **Frontend**: React with Tailwind CSS for styling
-- **Backend**: Node.js with Express.js for handling requests
+- **Frontend**: React & Tailwind CSS
+- **Backend**: Node.js & Express.js
 
 ### Reason for MVP Scope
 At this stage, the focus of the project is to build a working MVP without user authentication, authorization, or payments. The decision to keep these out of the MVP is to align with my current learning journey in Node.js/Express, which is still covering foundational topics.
