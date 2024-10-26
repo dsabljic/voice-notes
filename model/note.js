@@ -22,10 +22,21 @@ const Note = sequelize.define(
       type: Sequelize.TEXT,
       allowNull: false,
     },
+    createdAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
+    updatedAt: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
   },
   {
     tableName: "note",
-  }
+    timestamps: false,
+  },
 );
 
 module.exports = Note;

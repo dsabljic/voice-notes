@@ -8,6 +8,7 @@ const {
 } = require("../util/lemon-fox-transcription");
 
 exports.getNotes = async (req, res, next) => {
+  console.log("Fetching notes");
   try {
     const notes = await Note.findAll();
     res.status(200).json({ notes });
@@ -16,7 +17,22 @@ exports.getNotes = async (req, res, next) => {
   }
 };
 
+exports.getRecentNotes = async (req, res, next) => {
+  try {
+    const recentNotes = await Note.findAll({
+      order: [["createdAt", "DESC"]],
+      limit: 3,
+    });
+
+    console.log("3 Most Recent Notes:", recentNotes);
+    return recentNotes;
+  } catch (error) {
+    console.error("Error fetching recent notes:", error);
+  }
+};
+
 exports.getNoteById = async (req, res) => {
+  console.log("Fetching note by id");
   try {
     const note = await Note.findByPk(req.params.noteId);
     if (!note) {
@@ -29,7 +45,8 @@ exports.getNoteById = async (req, res) => {
 };
 
 exports.createNote = async (req, res) => {
-  const type = req.body.type;
+  console.log("Creating new note");
+  const type = req.body.type || "transcription";
   try {
     let transcription;
     let audioFilePath;
@@ -58,28 +75,21 @@ exports.createNote = async (req, res) => {
     let newNote;
 
     if (type === "transcription") {
-      newNote = await Note.create({
-        title: req.body.title || "Untitled Note",
-        type: req.body.type,
-        content: transcription,
-        userId: req.user.id,
-      });
+      newNote = await createNewNote(
+        req.body.title,
+        transcription,
+        "transcription"
+      );
     } else if (type === "summary") {
       const summary = await getSummary(transcription);
-      newNote = await Note.create({
-        title: req.body.title || "Untitled Note",
-        type: req.body.type,
-        content: summary,
-        userId: req.user.id,
-      });
+      newNote = await createNewNote(req.body.title, summary, "summary");
     } else if (type === "list-of-ideas") {
       const listOfIdeas = await getListOfIdeas(transcription);
-      newNote = await Note.create({
-        title: req.body.title || "Untitled Note",
-        type: req.body.type,
-        content: listOfIdeas,
-        userId: req.user.id,
-      });
+      newNote = await createNewNote(
+        req.body.title,
+        listOfIdeas,
+        "list-of-ideas"
+      );
     }
 
     res.status(201).json({ note: newNote });
@@ -89,8 +99,9 @@ exports.createNote = async (req, res) => {
 };
 
 exports.updateNote = async (req, res) => {
+  console.log("Updating note");
   const { noteId } = req.params;
-  const { title, content, type } = req.body;
+  const { title, content } = req.body;
 
   try {
     const note = await Note.findByPk(noteId);
@@ -98,7 +109,7 @@ exports.updateNote = async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    const updatedFields = { title, content, type };
+    const updatedFields = { title, content, updatedAt: new Date() };
     Object.assign(note, updatedFields);
 
     await note.save();
@@ -110,6 +121,7 @@ exports.updateNote = async (req, res) => {
 };
 
 exports.deleteNote = async (req, res) => {
+  console.log("Deleting a note");
   try {
     const id = req.params.noteId;
     const note = await Note.findByPk(id);
@@ -121,4 +133,17 @@ exports.deleteNote = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to delete note" });
   }
+};
+
+const createNewNote = async (title, content, type) => {
+  const newNote = await Note.create({
+    title: title || "Untitled Note",
+    content,
+    type,
+    userId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  return newNote;
 };

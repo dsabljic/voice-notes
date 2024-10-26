@@ -9,6 +9,8 @@ const upload = multer({ dest: "uploads/" });
 
 router.get("/", notesController.getNotes);
 
+router.get("/recent", notesController.getRecentNotes);
+
 router.get("/:noteId", notesController.getNoteById);
 
 router.post("/", upload.single("audio"), notesController.createNote);
