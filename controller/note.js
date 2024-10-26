@@ -13,6 +13,7 @@ exports.getNotes = async (req, res, next) => {
     const notes = await Note.findAll();
     res.status(200).json({ notes });
   } catch (err) {
+    console.error("Error fetching notes:", error);
     res.status(500).json({ error: "Failed to fetch notes" });
   }
 };
@@ -25,9 +26,10 @@ exports.getRecentNotes = async (req, res, next) => {
     });
 
     console.log("3 Most Recent Notes:", recentNotes);
-    return recentNotes;
+    res.status(200).json({ notes: recentNotes });
   } catch (error) {
     console.error("Error fetching recent notes:", error);
+    res.status(500).json({ error: "Failed to fetch notes" });
   }
 };
 
@@ -40,6 +42,7 @@ exports.getNoteById = async (req, res) => {
     }
     res.status(200).json({ note });
   } catch (err) {
+    console.error("Error fetching note:", error);
     res.status(500).json({ error: "Failed to fetch note" });
   }
 };
@@ -94,6 +97,7 @@ exports.createNote = async (req, res) => {
 
     res.status(201).json({ note: newNote });
   } catch (err) {
+    console.error("Error creating a note:", error);
     res.status(500).json({ error: "Failed to create note" });
   }
 };
@@ -116,6 +120,7 @@ exports.updateNote = async (req, res) => {
     res.status(200).json({ message: "Note updated successfully" });
   } catch (err) {
     console.log(err);
+    console.error("Error updating a note:", error);
     res.status(500).json({ error: "Failed to update note" });
   }
 };
@@ -131,6 +136,7 @@ exports.deleteNote = async (req, res) => {
     await note.destroy();
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (err) {
+    console.error("Error deleting a note:", error);
     res.status(500).json({ error: "Failed to delete note" });
   }
 };
