@@ -11,12 +11,12 @@ This project is an MVP for a SaaS application that allows users to record their 
 - **Frontend**: React & Tailwind CSS
 - **Backend**: Node.js & Express.js
 
-### Reason for MVP Scope
+<!-- ### Reason for MVP Scope
 At this stage, the focus of the project is to build a working MVP without user authentication, authorization, or payments. The decision to keep these out of the MVP is to align with my current learning journey in Node.js/Express, which is still covering foundational topics.
 
 By limiting the scope of this MVP I want to:
 - Apply what I am currently learning in the aforementioned course.
-- Create a simple, functional version of the full stack app without diving into topics like authentication and payment integration, which will be added later as I advance through the course.
+- Create a simple, functional version of the full stack app without diving into topics like authentication and payment integration, which will be added later as I advance through the course. -->
 
 ### Features
 - **Record voice notes**: Users can record voice notes directly in the app.
@@ -28,35 +28,26 @@ By limiting the scope of this MVP I want to:
 - **Add payments**: Allow users to access extended features based on the purchase plan they select.
 - **Improve user management and auth**: Integrate third-party services like Auth0 for a more secure user management and authorization.
 
-### How to Run the Project
+### How to run the project
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/yourusername/voice-note-saas.git
    ```
    
 2. **Install dependencies**:
-   - For the backend (Node.js):
      ```bash
-     cd backend
-     npm install
-     ```
-   - For the frontend (React):
-     ```bash
-     cd frontend
      npm install
      ```
 
 3. **Run the development servers**:
    - Start the backend (Node.js):
      ```bash
-     cd backend
      node app.js
      ```
    - Start the frontend (React):
      ```bash
-     cd frontend
      npm run dev
      ```
 
 4. **Access the app**:
-   Navigate to `http://localhost:3000` to use the application.
+   Navigate to `http://localhost:5173` to use the application or test the API endpoints at `http://localhost:3000`.
