@@ -49,7 +49,9 @@ exports.getNoteById = async (req, res) => {
 
 exports.createNote = async (req, res) => {
   console.log("Creating new note");
+  const MAX_FILE_SIZE = 20 * 1024 * 1024;
   const type = req.body.type || "transcription";
+
   try {
     let transcription;
     let audioFilePath;
@@ -57,6 +59,15 @@ exports.createNote = async (req, res) => {
     if (req.file) {
       console.log(req.file);
       audioFilePath = req.file.path;
+      if (req.file.size > MAX_FILE_SIZE) {
+        try {
+          await fs.unlink(audioFilePath);
+          console.log("deleted");
+        } catch (error) {
+          console.error(error);
+        }
+        return res.status(413).json({ error: "File size too large" });
+      }
       transcription = await getTranscription(audioFilePath);
     } else if (req.body.audioData) {
       const audioBuffer = Buffer.from(req.body.audioData, "base64");

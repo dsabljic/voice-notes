@@ -5,7 +5,7 @@ const notesController = require("../controller/note");
 
 const router = express.Router();
 
-const upload = multer({ dest: "uploads/", limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({ dest: "uploads/" });
 
 router.get("/", notesController.getNotes);
 
