@@ -19,13 +19,13 @@ exports.getNotes = async (req, res, next) => {
 };
 
 exports.getRecentNotes = async (req, res, next) => {
+  console.log("Fetching 3 most recent notes");
   try {
     const recentNotes = await Note.findAll({
       order: [["createdAt", "DESC"]],
       limit: 3,
     });
 
-    console.log("3 Most Recent Notes:", recentNotes);
     res.status(200).json({ notes: recentNotes });
   } catch (error) {
     console.error("Error fetching recent notes:", error);
