@@ -1,5 +1,7 @@
 # Voice Note SaaS - MVP
 
+[frontend](https://github.com/dsabljic/voice-notes-frontend/blob/master/README.md)
+
 ## Project Overview
 
 This project is an MVP for a SaaS application that allows users to record their voice notes and transform them into various textual forms like:
