@@ -119,7 +119,6 @@ exports.updateNote = async (req, res) => {
   }
 
   const { noteId } = req.params;
-  const { title, content } = req.body;
 
   try {
     const note = await Note.findByPk(noteId);
@@ -127,14 +126,21 @@ exports.updateNote = async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    const updatedFields = { title, content, updatedAt: new Date() };
-    Object.assign(note, updatedFields);
+    const title = req.body.title || note.title;
+    const content = req.body.content || note.content;
 
-    await note.save();
+    if (title !== note.title || content !== note.content) {
+      note.title = title;
+      note.content = content;
+      note.updatedAt = new Date();
+
+      await note.save();
+    }
+
     res.status(200).json({ message: "Note updated successfully" });
   } catch (err) {
     console.log(err);
-    console.error("Error updating a note:", error);
+    console.error("Error updating a note:", err);
     res.status(500).json({ error: "Failed to update note" });
   }
 };

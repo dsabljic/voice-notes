@@ -14,7 +14,9 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["audio/mp3", "audio/wav", "video/mp4"];
     if (!allowedTypes.includes(file.mimetype)) {
-      const error = new Error("Invalid file type, only .mp3, .mp4 and .wav files are allowed!");
+      const error = new Error(
+        "Invalid file type, only .mp3, .mp4 and .wav files are allowed!"
+      );
       error.status = 400;
       return cb(error, false);
     }
@@ -24,6 +26,7 @@ const upload = multer({
 
 const noteValidationRules = [
   body("title").isLength({ min: 1 }).withMessage("Title is required"),
+  body("content").isLength({ min: 1 }).withMessage("Content is required"),
   body("type")
     .exists()
     .withMessage("Type is required")
@@ -45,6 +48,21 @@ router.post(
 );
 
 router.put("/:noteId", noteValidationRules, notesController.updateNote);
+
+router.patch(
+  "/:noteId",
+  [
+    body("title")
+      .optional()
+      .isLength({ min: 1 })
+      .withMessage("Title must not be empty"),
+    body("content")
+      .optional()
+      .isLength({ min: 1 })
+      .withMessage("Content must not be empty"),
+  ],
+  notesController.updateNote
+);
 
 router.delete("/:noteId", notesController.deleteNote);
 
