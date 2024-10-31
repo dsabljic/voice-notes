@@ -24,16 +24,6 @@ const upload = multer({
   },
 });
 
-const noteValidationRules = [
-  body("title").isLength({ min: 1 }).withMessage("Title is required"),
-  body("content").isLength({ min: 1 }).withMessage("Content is required"),
-  body("type")
-    .exists()
-    .withMessage("Type is required")
-    .isIn(["transcription", "summary", "list-of-ideas"])
-    .withMessage("Invalid note type"),
-];
-
 router.get("/", notesController.getNotes);
 
 router.get("/recent", notesController.getRecentNotes);
@@ -43,11 +33,30 @@ router.get("/:noteId", notesController.getNoteById);
 router.post(
   "/",
   upload.single("audio"),
-  noteValidationRules,
+  [
+    body("title").isLength({ min: 1 }).withMessage("Title is required"),
+    body("type")
+      .exists()
+      .withMessage("Type is required")
+      .isIn(["transcription", "summary", "list-of-ideas"])
+      .withMessage("Invalid note type"),
+  ],
   notesController.createNote
 );
 
-router.put("/:noteId", noteValidationRules, notesController.updateNote);
+router.put(
+  "/:noteId",
+  [
+    body("title").isLength({ min: 1 }).withMessage("Title is required"),
+    body("content").isLength({ min: 1 }).withMessage("Content is required"),
+    body("type")
+      .exists()
+      .withMessage("Type is required")
+      .isIn(["transcription", "summary", "list-of-ideas"])
+      .withMessage("Invalid note type"),
+  ],
+  notesController.updateNote
+);
 
 router.patch(
   "/:noteId",
