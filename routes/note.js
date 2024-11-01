@@ -5,24 +5,6 @@ const notesController = require("../controller/note");
 
 const router = express.Router();
 
-// const MAX_FILE_SIZE = 20 * 1024 * 1024;
-
-// const upload = multer({
-//   dest: "uploads/",
-//   limits: { fileSize: MAX_FILE_SIZE },
-//   fileFilter: (req, file, cb) => {
-//     const allowedTypes = ["audio/mpeg", "audio/wav", "video/mp4"];
-//     if (!allowedTypes.includes(file.mimetype)) {
-//       const error = new Error(
-//         "Invalid file type, only .mp3, .mp4 and .wav files are allowed!"
-//       );
-//       error.status = 400;
-//       return cb(error, false);
-//     }
-//     cb(null, true);
-//   },
-// });
-
 router.get("/", notesController.getNotes);
 
 router.get("/recent", notesController.getRecentNotes);
