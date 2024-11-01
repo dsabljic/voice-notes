@@ -66,12 +66,6 @@ exports.createNote = async (req, res) => {
       console.log(req.file);
       audioFilePath = req.file.path;
       transcription = await getTranscription(audioFilePath);
-    } else if (req.body.audioData) {
-      const audioBuffer = Buffer.from(req.body.audioData, "base64");
-      audioFilePath = `uploads/live_audio_${Date.now()}.mp3`;
-      await fs.writeFile(audioFilePath, audioBuffer);
-
-      transcription = await getTranscription(audioFilePath);
     } else {
       return res.status(400).json({ error: "No audio data provided" });
     }
