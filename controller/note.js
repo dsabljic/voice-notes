@@ -102,7 +102,7 @@ exports.createNote = async (req, res) => {
 
     res.status(201).json({ note: newNote });
   } catch (err) {
-    console.error("Error creating a note:", error);
+    console.error("Error creating a note:", err);
     res.status(500).json({ error: "Failed to create note" });
   }
 };
