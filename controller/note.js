@@ -10,8 +10,8 @@ const {
 
 exports.getNotes = async (req, res, next) => {
   console.log("Fetching notes");
-  const page = req.query.page || 1;
-  const notePerPage = req.query.pageSize || 10;
+  const page = +req.query.page || 1;
+  const notePerPage = +req.query.pageSize || 10;
 
   try {
     const notes = await Note.findAll({ offset: (page - 1) * notePerPage, limit: notePerPage });
