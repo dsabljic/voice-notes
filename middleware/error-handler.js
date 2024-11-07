@@ -2,6 +2,7 @@ const multer = require("multer");
 
 module.exports = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
+    console.log(err);
     switch (err.code) {
       case "LIMIT_FILE_SIZE":
         return res.status(413).json({ error: "File size too large" });
@@ -11,6 +12,7 @@ module.exports = (err, req, res, next) => {
   }
 
   if (err) {
+    console.log(err);
     return res
       .status(err.status || 500)
       .json({ error: err.message || "An error occurred" });
