@@ -7,6 +7,7 @@ const {
   getSummary,
   getListOfIdeas,
 } = require("../util/lemon-fox-transcription");
+const { throwError } = require("../util/error");
 
 exports.getNotes = async (req, res, next) => {
   console.log("Fetching notes");
@@ -14,11 +15,15 @@ exports.getNotes = async (req, res, next) => {
   const notePerPage = +req.query.pageSize || 10;
 
   try {
-    const notes = await Note.findAll({ offset: (page - 1) * notePerPage, limit: notePerPage });
+    const notes = await Note.findAll({
+      offset: (page - 1) * notePerPage,
+      limit: notePerPage,
+    });
     res.status(200).json({ notes });
   } catch (err) {
     console.error("Error fetching notes:", err);
-    res.status(500).json({ error: "Failed to fetch notes" });
+    throwError(500, "Failed to fetch notes", next);
+    // res.status(500).json({ error: "Failed to fetch notes" });
   }
 };
 
@@ -31,32 +36,39 @@ exports.getRecentNotes = async (req, res, next) => {
     });
 
     res.status(200).json({ notes: recentNotes });
-  } catch (error) {
-    console.error("Error fetching recent notes:", error);
-    res.status(500).json({ error: "Failed to fetch notes" });
+  } catch (err) {
+    console.error("Error fetching recent notes", err);
+    throwError(500, "Failed to fetch recent notes", next);
   }
 };
 
-exports.getNoteById = async (req, res) => {
+exports.getNoteById = async (req, res, next) => {
   console.log("Fetching note by id");
   try {
     const note = await Note.findByPk(req.params.noteId);
     if (!note) {
-      return res.status(404).json({ error: "Note not found" });
+      return throwError(404, "Note not found", next);
+      // return res.status(404).json({ error: "Note not found" });
     }
     res.status(200).json({ note });
   } catch (err) {
-    console.error("Error fetching note:", error);
-    res.status(500).json({ error: "Failed to fetch note" });
+    console.error("Error fetching note:", err);
+    // res.status(500).json({ error: "Failed to fetch note" });
+    throwError(500, "Failed to fetch note", next);
   }
 };
 
-exports.createNote = async (req, res) => {
+exports.createNote = async (req, res, next) => {
   console.log("Creating new note");
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ error: errors.array() });
+    const errorMessage = errors
+      .array()
+      .map((err) => err.msg)
+      .join(", ");
+    return throwError(400, errorMessage, next);
+    // return res.status(400).json({ error: errors.array() });
   }
 
   const type = req.body.type;
@@ -70,7 +82,8 @@ exports.createNote = async (req, res) => {
       audioFilePath = req.file.path;
       transcription = await getTranscription(audioFilePath);
     } else {
-      return res.status(400).json({ error: "No audio data provided" });
+      return throwError(400, "No audio file provided", next);
+      // return res.status(400).json({ error: "No audio data provided" });
     }
 
     try {
@@ -103,16 +116,22 @@ exports.createNote = async (req, res) => {
     res.status(201).json({ note: newNote });
   } catch (err) {
     console.error("Error creating a note:", err);
-    res.status(500).json({ error: "Failed to create note" });
+    // res.status(500).json({ error: "Failed to create note" });
+    throwError(500, "Failed to create note", next);
   }
 };
 
-exports.updateNote = async (req, res) => {
+exports.updateNote = async (req, res, next) => {
   console.log("Updating note");
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ error: errors.array() });
+    // return res.status(400).json({ error: errors.array() });
+    const errorMessage = errors
+      .array()
+      .map((err) => err.msg)
+      .join(", ");
+    return throwError(400, errorMessage, next);
   }
 
   const { noteId } = req.params;
@@ -120,7 +139,8 @@ exports.updateNote = async (req, res) => {
   try {
     const note = await Note.findByPk(noteId);
     if (!note) {
-      return res.status(404).json({ error: "Note not found" });
+      return throwError(404, "Note not found", next);
+      // return res.status(404).json({ error: "Note not found" });
     }
 
     const title = req.body.title || note.title;
@@ -138,23 +158,26 @@ exports.updateNote = async (req, res) => {
   } catch (err) {
     console.log(err);
     console.error("Error updating a note:", err);
-    res.status(500).json({ error: "Failed to update note" });
+    // res.status(500).json({ error: "Failed to update note" });
+    throwError(500, "Failed to update note", next);
   }
 };
 
-exports.deleteNote = async (req, res) => {
+exports.deleteNote = async (req, res, next) => {
   console.log("Deleting a note");
   try {
     const id = req.params.noteId;
     const note = await Note.findByPk(id);
     if (!note) {
-      return res.status(404).json({ error: "Note not found" });
+      return throwError(404, "Note not found", next);
+      // return res.status(404).json({ error: "Note not found" });
     }
     await note.destroy();
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (err) {
-    console.error("Error deleting a note:", error);
-    res.status(500).json({ error: "Failed to delete note" });
+    console.error("Error deleting a note:", err);
+    // res.status(500).json({ error: "Failed to delete note" });
+    throwError(500, "Failed to delete note", next);
   }
 };
 
