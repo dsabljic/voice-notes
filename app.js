@@ -2,12 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 
-const User = require("./model/user");
 const sequelize = require("./util/database");
-const Note = require("./model/note");
-const RecordingLog = require("./model/redording-log");
 const noteRoutes = require("./routes/note");
 const errorHandler = require("./middleware/error-handler");
+const User = require("./model/user");
+const Note = require("./model/note");
+const Plan = require("./model/plan");
+const Subscription = require("./model/subscription");
 
 const app = express();
 
@@ -70,11 +71,14 @@ app.use("/notes", noteRoutes);
 
 app.use(errorHandler);
 
-User.hasMany(Note, { constraints: true, onDelete: "CASCADE" });
-Note.belongsTo(User);
+User.hasMany(Note, { foreignKey: "userId", onDelete: "CASCADE" });
+Note.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(RecordingLog, { constraints: true, onDelete: "CASCADE" });
-RecordingLog.belongsTo(User);
+User.hasOne(Subscription, { foreignKey: "userId", onDelete: "CASCADE" });
+Subscription.belongsTo(User, { foreignKey: "userId" });
+
+Plan.hasMany(Subscription, { foreignKey: "planId", onDelete: "CASCADE" });
+Subscription.belongsTo(Plan, { foreignKey: "planId" });
 
 sequelize
   // .sync({force: true})

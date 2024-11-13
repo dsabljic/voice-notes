@@ -12,12 +12,12 @@ const Subscription = sequelize.define(
     userId: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      references: { model: "users", key: "id" },
+      references: { model: "user", key: "id" },
     },
     planId: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      references: { model: "plans", key: "id" },
+      references: { model: "plan", key: "id" },
     },
     renewalDate: {
       type: Sequelize.DATE,
