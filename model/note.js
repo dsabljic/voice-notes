@@ -15,12 +15,20 @@ const Note = sequelize.define(
       allowNull: false,
     },
     type: {
-      type: Sequelize.STRING,
+      type: Sequelize.ENUM("transcription", "summary", "list-of-ideas"),
       allowNull: false,
     },
     content: {
       type: Sequelize.TEXT,
       allowNull: false,
+    },
+    userId: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      references: {
+        model: "user",
+        key: "id",
+      },
     },
     createdAt: {
       type: Sequelize.DATE,
@@ -36,7 +44,7 @@ const Note = sequelize.define(
   {
     tableName: "note",
     timestamps: false,
-  },
+  }
 );
 
 module.exports = Note;

@@ -1,38 +1,36 @@
 const Sequelize = require("sequelize");
 const sequelize = require("../util/database");
 
-const User = sequelize.define(
-  "user",
+const Plan = sequelize.define(
+  "plan",
   {
     id: {
       type: Sequelize.INTEGER,
       autoIncrement: true,
-      allowNull: false,
       primaryKey: true,
     },
-    name: {
-      type: Sequelize.STRING,
-      allowNull: false,
-    },
-    email: {
+    planType: {
       type: Sequelize.STRING,
       allowNull: false,
       unique: true,
     },
-    password: {
-      type: Sequelize.STRING,
+    price: {
+      type: Sequelize.DECIMAL,
       allowNull: false,
     },
-    role: {
-      type: Sequelize.STRING,
+    maxUploads: {
+      type: Sequelize.INTEGER,
       allowNull: false,
-      defaultValue: "free",
+    },
+    maxRecordingTime: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
     },
   },
   {
-    tableName: "user",
+    tableName: "plan",
     timestamps: false,
   }
 );
 
-module.exports = User;
+module.exports = Plan;
