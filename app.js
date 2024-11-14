@@ -85,23 +85,28 @@ Subscription.belongsTo(Plan, { foreignKey: "planId" });
 sequelize
   // .sync({force: true})
   .sync()
-  .then((result) => {
-    return User.findByPk(1);
+  .then(() => {
+    app.listen(3000, () => {
+      console.log("Server is running on port 3000");
+    });
   })
-  .then((user) => {
-    if (!user) {
-      return User.create({
-        name: "user",
-        email: "user@gmail.com",
-        password:
-          "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", // admin
-      });
-    }
-    return user;
-  })
-  .then((user) => {
-    app.listen(3000);
-  })
+  // .then((result) => {
+  //   return User.findByPk(1);
+  // })
+  // .then((user) => {
+  //   if (!user) {
+  //     return User.create({
+  //       name: "user",
+  //       email: "user@gmail.com",
+  //       password:
+  //         "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", // admin
+  //     });
+  //   }
+  //   return user;
+  // })
+  // .then((user) => {
+  //   app.listen(3000);
+  // })
   .catch((err) => {
-    console.log(err);
+    console.log(`Error from app.js: ${err}`);
   });

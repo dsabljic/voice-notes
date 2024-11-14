@@ -17,14 +17,14 @@ exports.signup = async (req, res, next) => {
   const name = req.body.name;
   const password = req.body.password;
   try {
-    const hashedPassword = bcrypt.hash(password);
+    const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
     });
 
-    return res
+    res
       .status(201)
       .json({ message: "User created successfully", user: newUser });
   } catch (err) {
