@@ -4,6 +4,7 @@ const multer = require("multer");
 
 const sequelize = require("./util/database");
 const noteRoutes = require("./routes/note");
+const authRoutes = require("./routes/auth");
 const errorHandler = require("./middleware/error-handler");
 const User = require("./model/user");
 const Note = require("./model/note");
@@ -68,6 +69,7 @@ app.use((req, res, next) => {
 
 // app.use('/admin', adminRoutes) // todo
 app.use("/notes", noteRoutes);
+app.use("/auth", authRoutes);
 
 app.use(errorHandler);
 
