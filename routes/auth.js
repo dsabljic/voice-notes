@@ -12,7 +12,7 @@ router.put(
     body("email")
       .isEmail()
       .custom((value, { req }) => {
-        return User.findOne({ email: value }).then((user) => {
+        return User.findOne({ where: { email: value } }).then((user) => {
           if (user) {
             console.log(`User with email: ${value} already exists`);
             console.log(user);
@@ -34,5 +34,7 @@ router.put(
   ],
   authController.signup
 );
+
+router.post("/login", authController.login);
 
 module.exports = router;
