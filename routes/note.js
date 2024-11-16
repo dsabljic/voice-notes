@@ -2,17 +2,19 @@ const express = require("express");
 const { body } = require("express-validator");
 
 const notesController = require("../controller/note");
+const isAuth = require("../middleware/is-auth");
 
 const router = express.Router();
 
-router.get("/", notesController.getNotes);
+router.get("/", isAuth, notesController.getNotes);
 
-router.get("/recent", notesController.getRecentNotes);
+router.get("/recent", isAuth, notesController.getRecentNotes);
 
-router.get("/:noteId", notesController.getNoteById);
+router.get("/:noteId", isAuth, notesController.getNoteById);
 
 router.post(
   "/",
+  isAuth,
   [
     body("title").isLength({ min: 1 }).withMessage("Title is required"),
     body("type")
@@ -26,6 +28,7 @@ router.post(
 
 router.put(
   "/:noteId",
+  isAuth,
   [
     body("title").isLength({ min: 1 }).withMessage("Title is required"),
     body("content").isLength({ min: 1 }).withMessage("Content is required"),
@@ -40,6 +43,7 @@ router.put(
 
 router.patch(
   "/:noteId",
+  isAuth,
   [
     body("title")
       .optional()
@@ -53,6 +57,6 @@ router.patch(
   notesController.updateNote
 );
 
-router.delete("/:noteId", notesController.deleteNote);
+router.delete("/:noteId", isAuth, notesController.deleteNote);
 
 module.exports = router;
