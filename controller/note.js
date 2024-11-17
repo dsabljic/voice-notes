@@ -94,17 +94,24 @@ exports.createNote = async (req, res, next) => {
       newNote = await createNewNote(
         req.body.title,
         transcription,
-        "transcription"
+        "transcription",
+        req.userId
       );
     } else if (type === "summary") {
       const summary = await getSummary(transcription);
-      newNote = await createNewNote(req.body.title, summary, "summary");
+      newNote = await createNewNote(
+        req.body.title,
+        summary,
+        "summary",
+        req.userId
+      );
     } else if (type === "list-of-ideas") {
       const listOfIdeas = await getListOfIdeas(transcription);
       newNote = await createNewNote(
         req.body.title,
         listOfIdeas,
-        "list-of-ideas"
+        "list-of-ideas",
+        req.userId
       );
     }
 
@@ -170,12 +177,12 @@ exports.deleteNote = async (req, res, next) => {
   }
 };
 
-const createNewNote = async (title, content, type) => {
+const createNewNote = async (title, content, type, userId) => {
   const newNote = await Note.create({
     title: title || "Untitled Note",
     content,
     type,
-    userId: 1,
+    userId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
