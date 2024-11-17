@@ -1,8 +1,8 @@
 const Sequelize = require("sequelize");
 
-const sequelize = new Sequelize("voice-notes-ai", "root", "root", {
-  dialect: "mysql",
-  host: "localhost",
+const sequelize = new Sequelize({
+  dialect: "sqlite",
+  storage: "./voice-notes-ai.sqlite",
 });
 
 module.exports = sequelize;
