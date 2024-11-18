@@ -16,6 +16,9 @@ exports.getNotes = async (req, res, next) => {
 
   try {
     const notes = await Note.findAll({
+      where: {
+        userId: req.userId,
+      },
       offset: (page - 1) * notePerPage,
       limit: notePerPage,
     });
@@ -142,6 +145,10 @@ exports.updateNote = async (req, res, next) => {
       return throwError(404, "Note not found", next);
     }
 
+    if (note.userId !== req.userId) {
+      return throwError(403, "Unauthorized update request", next);
+    }
+
     const title = req.body.title || note.title;
     const content = req.body.content || note.content;
 
@@ -168,6 +175,9 @@ exports.deleteNote = async (req, res, next) => {
     const note = await Note.findByPk(id);
     if (!note) {
       return throwError(404, "Note not found", next);
+    }
+    if (note.userId !== req.userId) {
+      return throwError(403, "Unauthorized delete request", next);
     }
     await note.destroy();
     res.status(200).json({ message: "Note deleted successfully" });
