@@ -14,9 +14,9 @@ exports.getTranscription = async (audioPath) => {
       model: "whisper-1",
     });
     return transcription.text;
-  } catch (err) {
+  } catch (error) {
     console.error("Error getting transcription:", err);
-    throw err;
+    throw error;
   }
 };
 
@@ -31,6 +31,7 @@ exports.getSummary = async (transcription) => {
     return summary;
   } catch (error) {
     console.error("Error getting summary:", error);
+    throw error;
   }
 };
 
@@ -45,6 +46,7 @@ exports.getListOfIdeas = async (transcription) => {
     return ideas;
   } catch (error) {
     console.error(error);
+    throw error;
   }
 };
 
@@ -84,5 +86,6 @@ const getCompletions = async (prompt) => {
     return completion.choices[0].message.content;
   } catch (error) {
     console.error("Error getting completion:", error);
+    throw error;
   }
 };
