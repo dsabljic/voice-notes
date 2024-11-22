@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const User = require("../model/user");
+const Subscription = require("../model/subscription");
+const Plan = require("../model/plan");
 const { throwError } = require("../util/error");
 
 exports.signup = async (req, res, next) => {
@@ -25,7 +27,20 @@ exports.signup = async (req, res, next) => {
       password: hashedPassword,
     });
 
-    res
+    const freePlan = await Plan.fine({ where: { planType: "free" } });
+
+    const renewalDate = new Date();
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+
+    await Subscription.create({
+      userId: newUser.id,
+      planId: 1,
+      renewalDate,
+      uploadsLeft: freePlan.maxUploads,
+      recordingTimeLeft: freePlan.maxRecordingTime,
+    });
+
+    await res
       .status(201)
       .json({ message: "User created successfully", user: newUser });
   } catch (err) {
