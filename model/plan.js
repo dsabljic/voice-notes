@@ -10,7 +10,7 @@ const Plan = sequelize.define(
       primaryKey: true,
     },
     planType: {
-      type: Sequelize.STRING,
+      type: Sequelize.ENUM("free", "standard", "pro"),
       allowNull: false,
       unique: true,
     },
