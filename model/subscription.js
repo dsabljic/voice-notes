@@ -24,11 +24,11 @@ const Subscription = sequelize.define(
       allowNull: false,
       defaultValue: Sequelize.NOW,
     },
-    currentUploads: {
+    uploadsLeft: {
       type: Sequelize.INTEGER,
       defaultValue: 0,
     },
-    currentRecordingTime: {
+    recordingTimeLeft: {
       type: Sequelize.INTEGER,
       defaultValue: 0,
     },
