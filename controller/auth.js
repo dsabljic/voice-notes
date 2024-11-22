@@ -27,14 +27,19 @@ exports.signup = async (req, res, next) => {
       password: hashedPassword,
     });
 
-    const freePlan = await Plan.fine({ where: { planType: "free" } });
+    console.log("New user created");
+
+    const freePlan = await Plan.findOne({ where: { planType: "free" } });
+
+    console.log("Free plan: ");
+    console.log(freePlan);
 
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + 1);
 
     await Subscription.create({
       userId: newUser.id,
-      planId: 1,
+      planId: freePlan.id,
       renewalDate,
       uploadsLeft: freePlan.maxUploads,
       recordingTimeLeft: freePlan.maxRecordingTime,
