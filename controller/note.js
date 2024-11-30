@@ -1,7 +1,9 @@
 const fs = require("fs/promises");
 const { validationResult } = require("express-validator");
+const { loadMusicMetadata } = require("music-metadata");
 
 const Note = require("../model/note");
+const Subscription = require("../model/subscription");
 const {
   getTranscription,
   getSummary,
@@ -33,6 +35,7 @@ exports.getRecentNotes = async (req, res, next) => {
   console.log("Fetching 3 most recent notes");
   try {
     const recentNotes = await Note.findAll({
+      where: { userId: req.userId },
       order: [["createdAt", "DESC"]],
       limit: 3,
     });
@@ -50,6 +53,9 @@ exports.getNoteById = async (req, res, next) => {
     const note = await Note.findByPk(req.params.noteId);
     if (!note) {
       return throwError(404, "Note not found", next);
+    }
+    if (note.userId !== req.userId) {
+      return throwError(403, "Access denied", next);
     }
     res.status(200).json({ note });
   } catch (err) {
@@ -71,15 +77,40 @@ exports.createNote = async (req, res, next) => {
   }
 
   const type = req.body.type;
+  const isRecording = req.body.isRecording === "true" ? true : false;
 
   try {
+    const subscription = await Subscription.findOne({
+      where: { userId: req.userId },
+    });
+    const { uploadsLeft, recordingTimeLeft } = subscription;
+
     let transcription;
-    let audioFilePath;
+    let audioDuration;
+    let audioFilePath = req.file.path;
 
     if (req.file) {
       console.log(req.file);
-      audioFilePath = req.file.path;
+      if (!isRecording && !uploadsLeft) {
+        // doesn't have any more uploads left
+        return throwError(400, "No uploads left", next);
+      }
+      if (isRecording) {
+        audioDuration = await getAudioDuration(audioFilePath);
+      }
+      if (recordingTimeLeft - audioDuration < 0) {
+        // doesn't have any recording time left
+        return throwError(
+          400,
+          "The length of the recording exceeds the recording time limits",
+          next
+        );
+      }
       transcription = await getTranscription(audioFilePath);
+
+      if (isRecording) subscription.recordingTimeLeft -= audioDuration;
+      else subscription.uploadsLeft -= 1;
+      await subscription.save();
     } else {
       return throwError(400, "No audio file provided", next);
     }
@@ -162,7 +193,6 @@ exports.updateNote = async (req, res, next) => {
 
     res.status(200).json({ message: "Note updated successfully" });
   } catch (err) {
-    console.log(err);
     console.error("Error updating a note:", err);
     throwError(500, "Failed to update note", next);
   }
@@ -198,4 +228,15 @@ const createNewNote = async (title, content, type, userId) => {
   });
 
   return newNote;
+};
+
+const getAudioDuration = async (filePath) => {
+  try {
+    const mm = await loadMusicMetadata();
+    const metadata = await mm.parseFile(filePath);
+    return Math.floor(metadata.format.duration);
+  } catch (err) {
+    console.error("Error getting audio duration:", err);
+    throw err;
+  }
 };
