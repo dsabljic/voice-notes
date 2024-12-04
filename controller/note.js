@@ -122,32 +122,23 @@ exports.createNote = async (req, res, next) => {
       console.error(error);
     }
 
-    let newNote;
+    // let newNote;
+    let content;
 
     if (type === "transcription") {
-      newNote = await createNewNote(
-        req.body.title,
-        transcription,
-        "transcription",
-        req.userId
-      );
+      content = transcription;
     } else if (type === "summary") {
-      const summary = await getSummary(transcription);
-      newNote = await createNewNote(
-        req.body.title,
-        summary,
-        "summary",
-        req.userId
-      );
+      content = await getSummary(transcription);
     } else if (type === "list-of-ideas") {
-      const listOfIdeas = await getListOfIdeas(transcription);
-      newNote = await createNewNote(
-        req.body.title,
-        listOfIdeas,
-        "list-of-ideas",
-        req.userId
-      );
+      content = await getListOfIdeas(transcription);
     }
+
+    const newNote = await createNewNote(
+      req.body.title,
+      content,
+      type,
+      req.userId
+    );
 
     res.status(201).json({ note: newNote });
   } catch (err) {
