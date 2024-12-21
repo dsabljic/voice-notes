@@ -1,6 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const helmet = require("helmet");
+const fs = require("fs");
+const path = require("path");
+// const compression = require("compression");
+// const morgan = require("morgan");
 
 const sequelize = require("./util/database");
 const noteRoutes = require("./routes/note");
@@ -11,8 +16,18 @@ const User = require("./model/user");
 const Note = require("./model/note");
 const Plan = require("./model/plan");
 const Subscription = require("./model/subscription");
+require("./jobs/free-plan");
 
 const app = express();
+
+// const accessLogStream = fs.createWriteStream(
+//   path.join(__dirname, "access.log"),
+//   { flags: "a" }
+// );
+
+app.use(helmet());
+// app.use(compression()) // usually provided by the hosting service provider
+// app.use(morgan("combined", { stream: accessLogStream })); // provided by some hosting service providers
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
