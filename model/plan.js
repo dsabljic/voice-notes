@@ -26,6 +26,14 @@ const Plan = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: false,
     },
+    stripeProductId: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    stripePriceId: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "plan",
