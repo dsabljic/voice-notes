@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const { throwError } = require("../util/error");
 
@@ -11,7 +12,7 @@ module.exports = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   let decodedToken;
   try {
-    decodedToken = jwt.verify(token, "jtJP5RzWFqtFvEVsCm9lFtDzxO1vu0");
+    decodedToken = jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
     console.error("Invalid token:", err);
     return throwError(401, "Invalid token", next);
