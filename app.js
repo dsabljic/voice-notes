@@ -1,15 +1,33 @@
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const helmet = require("helmet");
+const fs = require("fs");
+const path = require("path");
+// const compression = require("compression");
+// const morgan = require("morgan");
 
-const User = require("./model/user");
 const sequelize = require("./util/database");
-const Note = require("./model/note");
-const RecordingLog = require("./model/redording-log");
 const noteRoutes = require("./routes/note");
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/user");
 const errorHandler = require("./middleware/error-handler");
+const User = require("./model/user");
+const Note = require("./model/note");
+const Plan = require("./model/plan");
+const Subscription = require("./model/subscription");
+require("./jobs/free-plan");
 
 const app = express();
+
+// const accessLogStream = fs.createWriteStream(
+//   path.join(__dirname, "access.log"),
+//   { flags: "a" }
+// );
+
+app.use(helmet());
+// app.use(compression()) // usually provided by the hosting service provider
+// app.use(morgan("combined", { stream: accessLogStream })); // provided by some hosting service providers
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -53,49 +71,30 @@ app.use(
   }).single("audio")
 );
 
-// temp solution before adding user auth
-app.use((req, res, next) => {
-  User.findByPk(1)
-    .then((user) => {
-      req.user = user;
-      next();
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-});
-
 // app.use('/admin', adminRoutes) // todo
 app.use("/notes", noteRoutes);
+app.use("/auth", authRoutes);
+app.use("/user", userRoutes);
 
 app.use(errorHandler);
 
-User.hasMany(Note, { constraints: true, onDelete: "CASCADE" });
-Note.belongsTo(User);
+User.hasMany(Note, { foreignKey: "userId", onDelete: "CASCADE" });
+Note.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(RecordingLog, { constraints: true, onDelete: "CASCADE" });
-RecordingLog.belongsTo(User);
+User.hasOne(Subscription, { foreignKey: "userId", onDelete: "CASCADE" });
+Subscription.belongsTo(User, { foreignKey: "userId" });
+
+Plan.hasMany(Subscription, { foreignKey: "planId", onDelete: "CASCADE" });
+Subscription.belongsTo(Plan, { foreignKey: "planId" });
 
 sequelize
   // .sync({force: true})
   .sync()
-  .then((result) => {
-    return User.findByPk(1);
-  })
-  .then((user) => {
-    if (!user) {
-      return User.create({
-        name: "user",
-        email: "user@gmail.com",
-        password:
-          "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", // admin
-      });
-    }
-    return user;
-  })
-  .then((user) => {
-    app.listen(3000);
+  .then(() => {
+    app.listen(3000, () => {
+      console.log("Server is running on port 3000");
+    });
   })
   .catch((err) => {
-    console.log(err);
+    console.log(`Error from app.js: ${err}`);
   });

@@ -24,13 +24,14 @@ const User = sequelize.define(
       allowNull: false,
     },
     role: {
-      type: Sequelize.STRING,
+      type: Sequelize.ENUM("user", "admin"),
       allowNull: false,
-      defaultValue: "free_user",
+      defaultValue: "user",
     },
   },
   {
     tableName: "user",
+    timestamps: false,
   }
 );
 

@@ -1,7 +1,9 @@
 const fs = require("fs/promises");
 const { validationResult } = require("express-validator");
+const { loadMusicMetadata } = require("music-metadata");
 
 const Note = require("../model/note");
+const Subscription = require("../model/subscription");
 const {
   getTranscription,
   getSummary,
@@ -16,6 +18,9 @@ exports.getNotes = async (req, res, next) => {
 
   try {
     const notes = await Note.findAll({
+      where: {
+        userId: req.userId,
+      },
       offset: (page - 1) * notePerPage,
       limit: notePerPage,
     });
@@ -30,6 +35,7 @@ exports.getRecentNotes = async (req, res, next) => {
   console.log("Fetching 3 most recent notes");
   try {
     const recentNotes = await Note.findAll({
+      where: { userId: req.userId },
       order: [["createdAt", "DESC"]],
       limit: 3,
     });
@@ -47,6 +53,9 @@ exports.getNoteById = async (req, res, next) => {
     const note = await Note.findByPk(req.params.noteId);
     if (!note) {
       return throwError(404, "Note not found", next);
+    }
+    if (note.userId !== req.userId) {
+      return throwError(403, "Access denied", next);
     }
     res.status(200).json({ note });
   } catch (err) {
@@ -68,15 +77,40 @@ exports.createNote = async (req, res, next) => {
   }
 
   const type = req.body.type;
+  const isRecording = req.body.isRecording === "true" ? true : false;
 
   try {
+    const subscription = await Subscription.findOne({
+      where: { userId: req.userId },
+    });
+    const { uploadsLeft, recordingTimeLeft } = subscription;
+
     let transcription;
-    let audioFilePath;
+    let audioDuration;
+    let audioFilePath = req.file.path;
 
     if (req.file) {
       console.log(req.file);
-      audioFilePath = req.file.path;
+      if (!isRecording && !uploadsLeft) {
+        // doesn't have any more uploads left
+        return throwError(400, "No uploads left", next);
+      }
+      if (isRecording) {
+        audioDuration = await getAudioDuration(audioFilePath);
+      }
+      if (recordingTimeLeft - audioDuration < 0) {
+        // doesn't have any recording time left
+        return throwError(
+          400,
+          "The length of the recording exceeds the recording time limits",
+          next
+        );
+      }
       transcription = await getTranscription(audioFilePath);
+
+      if (isRecording) subscription.recordingTimeLeft -= audioDuration;
+      else subscription.uploadsLeft -= 1;
+      await subscription.save();
     } else {
       return throwError(400, "No audio file provided", next);
     }
@@ -88,25 +122,23 @@ exports.createNote = async (req, res, next) => {
       console.error(error);
     }
 
-    let newNote;
+    // let newNote;
+    let content;
 
     if (type === "transcription") {
-      newNote = await createNewNote(
-        req.body.title,
-        transcription,
-        "transcription"
-      );
+      content = transcription;
     } else if (type === "summary") {
-      const summary = await getSummary(transcription);
-      newNote = await createNewNote(req.body.title, summary, "summary");
+      content = await getSummary(transcription);
     } else if (type === "list-of-ideas") {
-      const listOfIdeas = await getListOfIdeas(transcription);
-      newNote = await createNewNote(
-        req.body.title,
-        listOfIdeas,
-        "list-of-ideas"
-      );
+      content = await getListOfIdeas(transcription);
     }
+
+    const newNote = await createNewNote(
+      req.body.title,
+      content,
+      type,
+      req.userId
+    );
 
     res.status(201).json({ note: newNote });
   } catch (err) {
@@ -135,6 +167,10 @@ exports.updateNote = async (req, res, next) => {
       return throwError(404, "Note not found", next);
     }
 
+    if (note.userId !== req.userId) {
+      return throwError(403, "Unauthorized update request", next);
+    }
+
     const title = req.body.title || note.title;
     const content = req.body.content || note.content;
 
@@ -148,7 +184,6 @@ exports.updateNote = async (req, res, next) => {
 
     res.status(200).json({ message: "Note updated successfully" });
   } catch (err) {
-    console.log(err);
     console.error("Error updating a note:", err);
     throwError(500, "Failed to update note", next);
   }
@@ -162,6 +197,9 @@ exports.deleteNote = async (req, res, next) => {
     if (!note) {
       return throwError(404, "Note not found", next);
     }
+    if (note.userId !== req.userId) {
+      return throwError(403, "Unauthorized delete request", next);
+    }
     await note.destroy();
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (err) {
@@ -170,15 +208,26 @@ exports.deleteNote = async (req, res, next) => {
   }
 };
 
-const createNewNote = async (title, content, type) => {
+const createNewNote = async (title, content, type, userId) => {
   const newNote = await Note.create({
     title: title || "Untitled Note",
     content,
     type,
-    userId: 1,
+    userId,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
   return newNote;
+};
+
+const getAudioDuration = async (filePath) => {
+  try {
+    const mm = await loadMusicMetadata();
+    const metadata = await mm.parseFile(filePath);
+    return Math.floor(metadata.format.duration);
+  } catch (err) {
+    console.error("Error getting audio duration:", err);
+    throw err;
+  }
 };
