@@ -29,7 +29,7 @@ By limiting the scope of this MVP I want to:
 
 ### Future Plans/TODO list
 
-- [ ] **Implement automated tests**: Add unit tests for both frontend and backend to ensure reliability during future development.
+- [ ] **Implement automated tests**: Add unit tests for to ensure reliability during future development.
 - [x] **Add user authentication and authorization**: Implement user sign-up & sign-in
 - [ ] **Add payments**: Allow users to access extended features based on the purchase plan they select.
 
