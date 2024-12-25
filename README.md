@@ -1,6 +1,6 @@
 # Voice Note SaaS - MVP
 
-[frontend](https://github.com/dsabljic/voice-notes-frontend/blob/master/README.md)
+[frontend](https://github.com/dsabljic/voice-notes-frontend)
 
 ## Project Overview
 
