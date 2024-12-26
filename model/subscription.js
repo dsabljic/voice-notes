@@ -32,6 +32,10 @@ const Subscription = sequelize.define(
       type: Sequelize.INTEGER,
       defaultValue: 0,
     },
+    stripeSubscriptionId: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "subscription",

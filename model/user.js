@@ -28,6 +28,10 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "user",
     },
+    stripeCustomerId: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "user",
