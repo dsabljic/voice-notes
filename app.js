@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const helmet = require("helmet");
+const bodyParser = require("body-parser");
 const fs = require("fs");
 const path = require("path");
 // const compression = require("compression");
@@ -11,7 +12,9 @@ const sequelize = require("./util/database");
 const noteRoutes = require("./routes/note");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
+const paymentRoutes = require("./routes/payment");
 const errorHandler = require("./middleware/error-handler");
+const paymentController = require("./controller/payment");
 const User = require("./model/user");
 const Note = require("./model/note");
 const Plan = require("./model/plan");
@@ -51,6 +54,12 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
+app.post(
+  "/payment/webhook",
+  bodyParser.raw({ type: "application/json" }),
+  paymentController.handleWebhook
+);
+
 app.use(express.json());
 
 const corsOptions = {
@@ -75,6 +84,7 @@ app.use(
 app.use("/notes", noteRoutes);
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
+app.use("/payment", paymentRoutes);
 
 app.use(errorHandler);
 
@@ -88,7 +98,7 @@ Plan.hasMany(Subscription, { foreignKey: "planId", onDelete: "CASCADE" });
 Subscription.belongsTo(Plan, { foreignKey: "planId" });
 
 sequelize
-  // .sync({force: true})
+  // .sync({ force: true })
   .sync()
   .then(() => {
     app.listen(3000, () => {
