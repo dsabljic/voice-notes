@@ -96,10 +96,11 @@ exports.handleWebhook = async (req, res) => {
 
   switch (event.type) {
     case "invoice.payment_succeeded": {
-      const session = event.data.object;
-      await handleCheckoutSessionCompleted(session);
+      const invoice = event.data.object;
+      await handleInvoicePaymentSucceeded(invoice);
       break;
     }
+
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object;
@@ -113,104 +114,174 @@ exports.handleWebhook = async (req, res) => {
   res.json({ received: true });
 };
 
-async function handleCheckoutSessionCompleted(session) {
-  try {
-    // For subscription checkouts, session.subscription is the Stripe subscription ID
-    const stripeSubscriptionId = session.subscription;
-    const stripeCustomerId = session.customer;
+// async function handleInvoicePaymentSucceeded(invoice) {
+//   try {
+//     const stripeSubscriptionId = invoice.subscription; // same as invoice.subscription
+//     const stripeCustomerId = invoice.customer;
+//     const billingReason = invoice.billing_reason; // e.g. 'subscription_create' or 'subscription_cycle'
 
-    // Retrieve the subscription from Stripe for more info if needed
-    const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-    const priceId = stripeSub.items.data[0].price.id;
+//     // 1) Retrieve the subscription from Stripe if needed
+//     const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+//     const priceId = stripeSub.items.data[0].price.id;
 
-    // 1) Find the user by stripeCustomerId
-    const user = await User.findOne({ where: { stripeCustomerId } });
-    if (!user) {
-      console.error("User not found for customer ID:", stripeCustomerId);
-      return;
-    }
+//     // 2) Find your local user
+//     const user = await User.findOne({ where: { stripeCustomerId } });
+//     if (!user) {
+//       console.error("User not found for customer ID:", stripeCustomerId);
+//       return;
+//     }
 
-    // 2) Find the Plan by stripePriceId
-    const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
-    if (!plan) {
-      console.error("Plan not found for priceId:", priceId);
-      return;
-    }
+//     // 3) Find plan by stripePriceId
+//     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
+//     if (!plan) {
+//       console.error("Plan not found for priceId:", priceId);
+//       return;
+//     }
 
-    // 3) Update or create the subscription record in DB
-    let subscription = await Subscription.findOne({
-      where: { userId: user.id },
-    });
-    if (!subscription) {
-      // Create new subscription record
-      subscription = await Subscription.create({
-        userId: user.id,
-        planId: plan.id,
-        renewalDate: new Date(), // or whatever logic you want
-        uploadsLeft: plan.maxUploads,
-        recordingTimeLeft: plan.maxRecordingTime,
-        stripeSubscriptionId, // Save Stripe's subscription ID
-      });
-    } else {
-      // Update existing subscription
-      subscription.planId = plan.id;
-      subscription.stripeSubscriptionId = stripeSubscriptionId;
-      subscription.uploadsLeft = plan.maxUploads;
-      subscription.recordingTimeLeft = plan.maxRecordingTime;
-      subscription.renewalDate = new Date();
-      await subscription.save();
-    }
+//     // 4) Create/update the subscription row in your DB
+//     let subscription = await Subscription.findOne({
+//       where: { userId: user.id },
+//     });
+//     if (!subscription) {
+//       // Only create a new record if it's the first time user is subscribing
+//       // (e.g., billingReason = 'subscription_create')
+//       subscription = await Subscription.create({
+//         userId: user.id,
+//         planId: plan.id,
+//         stripeSubscriptionId,
+//         renewalDate: new Date(),
+//         uploadsLeft: plan.maxUploads,
+//         recordingTimeLeft: plan.maxRecordingTime,
+//       });
+//     } else {
+//       // If they already have a subscription record,
+//       // update it if this is a newly created subscription or a renewal
+//       subscription.planId = plan.id;
+//       subscription.stripeSubscriptionId = stripeSubscriptionId;
+//       subscription.renewalDate = new Date();
+//       subscription.uploadsLeft = plan.maxUploads;
+//       subscription.recordingTimeLeft = plan.maxRecordingTime;
+//       await subscription.save();
+//     }
 
-    console.log(
-      `Subscription updated for user ${user.id}, plan: ${plan.planType}`
-    );
-  } catch (err) {
-    console.error("Error handling checkout session completed:", err);
-  }
-}
+//     console.log(
+//       `Subscription updated for user ${user.id}, plan: ${plan.planType}`
+//     );
+//   } catch (err) {
+//     console.error("Error handling invoice.payment_succeeded:", err);
+//   }
+// }
 
-async function handleSubscriptionStatusChange(subscriptionObj) {
-  try {
-    const stripeSubscriptionId = subscriptionObj.id;
-    const stripeCustomerId = subscriptionObj.customer;
-    const status = subscriptionObj.status; // 'active', 'canceled', 'past_due', etc.
+// async function handleInvoicePaymentSucceeded(invoice) {
+//   try {
+//     const stripeSubscriptionId = invoice.subscription;
+//     const stripeCustomerId = invoice.customer;
 
-    // 1) Find your user by stripeCustomerId
-    const user = await User.findOne({ where: { stripeCustomerId } });
-    if (!user) {
-      console.error("No user found with stripeCustomerId:", stripeCustomerId);
-      return;
-    }
+//     if (!stripeSubscriptionId) {
+//       console.error("No stripeSubscriptionId on invoice.");
+//       return;
+//     }
 
-    // 2) Find the user’s subscription record in your DB
-    let subscription = await Subscription.findOne({
-      where: { userId: user.id },
-    });
-    if (!subscription) {
-      console.error("No local subscription found for user:", user.id);
-      return;
-    }
+//     if (!stripeCustomerId) {
+//       console.error("No stripeCustomerId on invoice.");
+//       return;
+//     }
 
-    if (status === "canceled" || status === "unpaid" || status === "past_due") {
-      // We revert them to the free plan
-      const freePlan = await Plan.findOne({ where: { planType: "free" } });
-      subscription.planId = freePlan.id;
-      subscription.stripeSubscriptionId = null; // they no longer have a paid sub
-      subscription.renewalDate = new Date();
-      subscription.uploadsLeft = freePlan.maxUploads;
-      subscription.recordingTimeLeft = freePlan.maxRecordingTime;
-      await subscription.save();
+//     const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+//     if (!stripeSub) {
+//       console.error(
+//         `Stripe subscription not found for ID: ${stripeSubscriptionId}`
+//       );
+//       return;
+//     }
+//     const priceId = stripeSub.items?.data?.[0]?.price?.id;
+//     if (!priceId) {
+//       console.error("No priceId found on subscription items.");
+//       return;
+//     }
 
-      console.log(`Subscription reverted to free plan for user ${user.id}`);
-    } else {
-      // If subscription is 'active', 'trialing', 'incomplete' etc.,
-      // you can keep your existing logic for updating plan usage, etc.
-      // Or update your subscription record if needed.
-      console.log(
-        `Subscription ${stripeSubscriptionId} updated with status: ${status}`
-      );
-    }
-  } catch (err) {
-    console.error("Error in handleSubscriptionStatusChange:", err);
-  }
-}
+//     const user = await User.findOne({ where: { stripeCustomerId } });
+//     if (!user) {
+//       console.error("No user found with stripeCustomerId:", stripeCustomerId);
+//       return;
+//     }
+
+//     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
+//     if (!plan) {
+//       console.error("Plan not found for priceId:", priceId);
+//       return;
+//     }
+
+//     let subscription = await Subscription.findOne({
+//       where: { userId: user.id },
+//     });
+
+//     const nextBillingTimestamp = stripeSub.current_period_end * 1000;
+//     const renewalDate = new Date(nextBillingTimestamp);
+
+//     if (!subscription) {
+//       subscription = await Subscription.create({
+//         userId: user.id,
+//         planId: plan.id,
+//         stripeSubscriptionId,
+//         renewalDate,
+//         uploadsLeft: plan.maxUploads,
+//         recordingTimeLeft: plan.maxRecordingTime,
+//       });
+//     } else {
+//       subscription.planId = plan.id;
+//       subscription.stripeSubscriptionId = stripeSubscriptionId;
+//       subscription.renewalDate = renewalDate;
+//       subscription.uploadsLeft = plan.maxUploads;
+//       subscription.recordingTimeLeft = plan.maxRecordingTime;
+//       await subscription.save();
+//     }
+
+//     console.log(
+//       `Subscription updated for user ${user.id}.
+//        Plan: ${plan.planType}, RenewalDate: ${renewalDate.toISOString()}`
+//     );
+//   } catch (err) {
+//     console.error("Error handling invoice.payment_succeeded:", err);
+//   }
+// }
+
+// async function handleSubscriptionStatusChange(subscriptionObj) {
+//   try {
+//     const stripeSubscriptionId = subscriptionObj.id;
+//     const stripeCustomerId = subscriptionObj.customer;
+//     const status = subscriptionObj.status;
+
+//     const user = await User.findOne({ where: { stripeCustomerId } });
+//     if (!user) {
+//       console.error("No user found with stripeCustomerId:", stripeCustomerId);
+//       return;
+//     }
+
+//     let subscription = await Subscription.findOne({
+//       where: { userId: user.id },
+//     });
+//     if (!subscription) {
+//       console.error("No local subscription found for user:", user.id);
+//       return;
+//     }
+
+//     if (status === "canceled" || status === "unpaid" || status === "past_due") {
+//       const freePlan = await Plan.findOne({ where: { planType: "free" } });
+//       subscription.planId = freePlan.id;
+//       subscription.stripeSubscriptionId = null;
+//       subscription.renewalDate = new Date();
+//       subscription.uploadsLeft = freePlan.maxUploads;
+//       subscription.recordingTimeLeft = freePlan.maxRecordingTime;
+//       await subscription.save();
+
+//       console.log(`Subscription reverted to free plan for user ${user.id}`);
+//     } else {
+//       console.log(
+//         `Subscription ${stripeSubscriptionId} updated with status: ${status}`
+//       );
+//     }
+//   } catch (err) {
+//     console.error("Error in handleSubscriptionStatusChange:", err);
+//   }
+// }
