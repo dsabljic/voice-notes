@@ -79,7 +79,7 @@ exports.createBillingPortalSession = async (req, res, next) => {
   }
 };
 
-exports.handleWebhook = async (req, res) => {
+exports.handleWebhook = async (req, res, next) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
@@ -90,198 +90,114 @@ exports.handleWebhook = async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("Webhook signature verification failed.", err.message);
+    console.error("Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  switch (event.type) {
-    case "invoice.payment_succeeded": {
-      const invoice = event.data.object;
-      await handleInvoicePaymentSucceeded(invoice);
-      break;
+  try {
+    switch (event.type) {
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdate(event.data.object);
+        break;
+      case "customer.subscription.deleted":
+        await handleSubscriptionCancellation(event.data.object);
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object;
-      await handleSubscriptionStatusChange(subscription);
-      break;
-    }
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
+    res.json({ received: true });
+  } catch (err) {
+    console.error("Error processing webhook:", err);
+    return res.status(500).json({ error: "Webhook processing failed" });
   }
-
-  res.json({ received: true });
 };
 
-// async function handleInvoicePaymentSucceeded(invoice) {
-//   try {
-//     const stripeSubscriptionId = invoice.subscription; // same as invoice.subscription
-//     const stripeCustomerId = invoice.customer;
-//     const billingReason = invoice.billing_reason; // e.g. 'subscription_create' or 'subscription_cycle'
+async function handleSubscriptionUpdate(stripeSubscription) {
+  const { customer, status, items } = stripeSubscription;
 
-//     // 1) Retrieve the subscription from Stripe if needed
-//     const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-//     const priceId = stripeSub.items.data[0].price.id;
+  try {
+    // Find user by Stripe customer ID
+    const user = await User.findOne({ where: { stripeCustomerId: customer } });
+    if (!user) {
+      throw new Error(`No user found for Stripe customer: ${customer}`);
+    }
 
-//     // 2) Find your local user
-//     const user = await User.findOne({ where: { stripeCustomerId } });
-//     if (!user) {
-//       console.error("User not found for customer ID:", stripeCustomerId);
-//       return;
-//     }
+    // Get the price ID from the subscription
+    const priceId = items.data[0].price.id;
 
-//     // 3) Find plan by stripePriceId
-//     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
-//     if (!plan) {
-//       console.error("Plan not found for priceId:", priceId);
-//       return;
-//     }
+    // Find the corresponding plan in our database
+    const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
+    if (!plan) {
+      throw new Error(`No plan found for Stripe price: ${priceId}`);
+    }
 
-//     // 4) Create/update the subscription row in your DB
-//     let subscription = await Subscription.findOne({
-//       where: { userId: user.id },
-//     });
-//     if (!subscription) {
-//       // Only create a new record if it's the first time user is subscribing
-//       // (e.g., billingReason = 'subscription_create')
-//       subscription = await Subscription.create({
-//         userId: user.id,
-//         planId: plan.id,
-//         stripeSubscriptionId,
-//         renewalDate: new Date(),
-//         uploadsLeft: plan.maxUploads,
-//         recordingTimeLeft: plan.maxRecordingTime,
-//       });
-//     } else {
-//       // If they already have a subscription record,
-//       // update it if this is a newly created subscription or a renewal
-//       subscription.planId = plan.id;
-//       subscription.stripeSubscriptionId = stripeSubscriptionId;
-//       subscription.renewalDate = new Date();
-//       subscription.uploadsLeft = plan.maxUploads;
-//       subscription.recordingTimeLeft = plan.maxRecordingTime;
-//       await subscription.save();
-//     }
+    // Update or create subscription record
+    const subscription = await Subscription.findOne({
+      where: { userId: user.id },
+    });
 
-//     console.log(
-//       `Subscription updated for user ${user.id}, plan: ${plan.planType}`
-//     );
-//   } catch (err) {
-//     console.error("Error handling invoice.payment_succeeded:", err);
-//   }
-// }
+    if (subscription) {
+      // Update existing subscription
+      subscription.planId = plan.id;
+      subscription.stripeSubscriptionId = stripeSubscription.id;
+      subscription.uploadsLeft = plan.maxUploads;
+      subscription.recordingTimeLeft = plan.maxRecordingTime;
+      subscription.renewalDate = new Date(
+        stripeSubscription.current_period_end * 1000
+      );
+      await subscription.save();
+    } else {
+      // Create new subscription
+      await Subscription.create({
+        userId: user.id,
+        planId: plan.id,
+        stripeSubscriptionId: stripeSubscription.id,
+        uploadsLeft: plan.maxUploads,
+        recordingTimeLeft: plan.maxRecordingTime,
+        renewalDate: new Date(stripeSubscription.current_period_end * 1000),
+      });
+    }
+  } catch (err) {
+    console.error("Error handling subscription update:", err);
+    throw err;
+  }
+}
 
-// async function handleInvoicePaymentSucceeded(invoice) {
-//   try {
-//     const stripeSubscriptionId = invoice.subscription;
-//     const stripeCustomerId = invoice.customer;
+async function handleSubscriptionCancellation(stripeSubscription) {
+  const { customer } = stripeSubscription;
 
-//     if (!stripeSubscriptionId) {
-//       console.error("No stripeSubscriptionId on invoice.");
-//       return;
-//     }
+  try {
+    // Find user by Stripe customer ID
+    const user = await User.findOne({ where: { stripeCustomerId: customer } });
+    if (!user) {
+      throw new Error(`No user found for Stripe customer: ${customer}`);
+    }
 
-//     if (!stripeCustomerId) {
-//       console.error("No stripeCustomerId on invoice.");
-//       return;
-//     }
+    // Find the free plan
+    const freePlan = await Plan.findOne({ where: { planType: "free" } });
+    if (!freePlan) {
+      throw new Error("Free plan not found");
+    }
 
-//     const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-//     if (!stripeSub) {
-//       console.error(
-//         `Stripe subscription not found for ID: ${stripeSubscriptionId}`
-//       );
-//       return;
-//     }
-//     const priceId = stripeSub.items?.data?.[0]?.price?.id;
-//     if (!priceId) {
-//       console.error("No priceId found on subscription items.");
-//       return;
-//     }
-
-//     const user = await User.findOne({ where: { stripeCustomerId } });
-//     if (!user) {
-//       console.error("No user found with stripeCustomerId:", stripeCustomerId);
-//       return;
-//     }
-
-//     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
-//     if (!plan) {
-//       console.error("Plan not found for priceId:", priceId);
-//       return;
-//     }
-
-//     let subscription = await Subscription.findOne({
-//       where: { userId: user.id },
-//     });
-
-//     const nextBillingTimestamp = stripeSub.current_period_end * 1000;
-//     const renewalDate = new Date(nextBillingTimestamp);
-
-//     if (!subscription) {
-//       subscription = await Subscription.create({
-//         userId: user.id,
-//         planId: plan.id,
-//         stripeSubscriptionId,
-//         renewalDate,
-//         uploadsLeft: plan.maxUploads,
-//         recordingTimeLeft: plan.maxRecordingTime,
-//       });
-//     } else {
-//       subscription.planId = plan.id;
-//       subscription.stripeSubscriptionId = stripeSubscriptionId;
-//       subscription.renewalDate = renewalDate;
-//       subscription.uploadsLeft = plan.maxUploads;
-//       subscription.recordingTimeLeft = plan.maxRecordingTime;
-//       await subscription.save();
-//     }
-
-//     console.log(
-//       `Subscription updated for user ${user.id}.
-//        Plan: ${plan.planType}, RenewalDate: ${renewalDate.toISOString()}`
-//     );
-//   } catch (err) {
-//     console.error("Error handling invoice.payment_succeeded:", err);
-//   }
-// }
-
-// async function handleSubscriptionStatusChange(subscriptionObj) {
-//   try {
-//     const stripeSubscriptionId = subscriptionObj.id;
-//     const stripeCustomerId = subscriptionObj.customer;
-//     const status = subscriptionObj.status;
-
-//     const user = await User.findOne({ where: { stripeCustomerId } });
-//     if (!user) {
-//       console.error("No user found with stripeCustomerId:", stripeCustomerId);
-//       return;
-//     }
-
-//     let subscription = await Subscription.findOne({
-//       where: { userId: user.id },
-//     });
-//     if (!subscription) {
-//       console.error("No local subscription found for user:", user.id);
-//       return;
-//     }
-
-//     if (status === "canceled" || status === "unpaid" || status === "past_due") {
-//       const freePlan = await Plan.findOne({ where: { planType: "free" } });
-//       subscription.planId = freePlan.id;
-//       subscription.stripeSubscriptionId = null;
-//       subscription.renewalDate = new Date();
-//       subscription.uploadsLeft = freePlan.maxUploads;
-//       subscription.recordingTimeLeft = freePlan.maxRecordingTime;
-//       await subscription.save();
-
-//       console.log(`Subscription reverted to free plan for user ${user.id}`);
-//     } else {
-//       console.log(
-//         `Subscription ${stripeSubscriptionId} updated with status: ${status}`
-//       );
-//     }
-//   } catch (err) {
-//     console.error("Error in handleSubscriptionStatusChange:", err);
-//   }
-// }
+    // Update subscription to free plan
+    const subscription = await Subscription.findOne({
+      where: { userId: user.id },
+    });
+    if (subscription) {
+      subscription.planId = freePlan.id;
+      subscription.stripeSubscriptionId = null;
+      subscription.uploadsLeft = freePlan.maxUploads;
+      subscription.recordingTimeLeft = freePlan.maxRecordingTime;
+      subscription.renewalDate = new Date();
+      subscription.renewalDate.setMonth(
+        subscription.renewalDate.getMonth() + 1
+      );
+      await subscription.save();
+    }
+  } catch (err) {
+    console.error("Error handling subscription cancellation:", err);
+    throw err;
+  }
+}
