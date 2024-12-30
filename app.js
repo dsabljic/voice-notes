@@ -3,8 +3,6 @@ const cors = require("cors");
 const multer = require("multer");
 const helmet = require("helmet");
 const bodyParser = require("body-parser");
-const fs = require("fs");
-const path = require("path");
 // const compression = require("compression");
 // const morgan = require("morgan");
 
