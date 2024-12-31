@@ -118,28 +118,23 @@ async function handleSubscriptionUpdate(stripeSubscription) {
   const { customer, status, items } = stripeSubscription;
 
   try {
-    // Find user by Stripe customer ID
     const user = await User.findOne({ where: { stripeCustomerId: customer } });
     if (!user) {
       throw new Error(`No user found for Stripe customer: ${customer}`);
     }
 
-    // Get the price ID from the subscription
     const priceId = items.data[0].price.id;
 
-    // Find the corresponding plan in our database
     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
     if (!plan) {
       throw new Error(`No plan found for Stripe price: ${priceId}`);
     }
 
-    // Update or create subscription record
     const subscription = await Subscription.findOne({
       where: { userId: user.id },
     });
 
     if (subscription) {
-      // Update existing subscription
       subscription.planId = plan.id;
       subscription.stripeSubscriptionId = stripeSubscription.id;
       subscription.uploadsLeft = plan.maxUploads;
@@ -149,7 +144,6 @@ async function handleSubscriptionUpdate(stripeSubscription) {
       );
       await subscription.save();
     } else {
-      // Create new subscription
       await Subscription.create({
         userId: user.id,
         planId: plan.id,
@@ -169,19 +163,16 @@ async function handleSubscriptionCancellation(stripeSubscription) {
   const { customer } = stripeSubscription;
 
   try {
-    // Find user by Stripe customer ID
     const user = await User.findOne({ where: { stripeCustomerId: customer } });
     if (!user) {
       throw new Error(`No user found for Stripe customer: ${customer}`);
     }
 
-    // Find the free plan
     const freePlan = await Plan.findOne({ where: { planType: "free" } });
     if (!freePlan) {
       throw new Error("Free plan not found");
     }
 
-    // Update subscription to free plan
     const subscription = await Subscription.findOne({
       where: { userId: user.id },
     });
