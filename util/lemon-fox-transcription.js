@@ -15,7 +15,7 @@ exports.getTranscription = async (audioPath) => {
     });
     return transcription.text;
   } catch (error) {
-    console.error("Error getting transcription:", err);
+    console.error("Error getting transcription:", error);
     throw error;
   }
 };
