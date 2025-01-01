@@ -11,13 +11,4 @@ const sequelize = new Sequelize({
   },
 });
 
-sequelize
-  .query("PRAGMA foreign_keys = ON")
-  .then(() => {
-    console.log("Foreign key constraints enabled.");
-  })
-  .catch(() => {
-    console.error("Error enabling foreign key constraints:", err);
-  });
-
 module.exports = sequelize;
