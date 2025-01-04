@@ -80,25 +80,6 @@ exports.createBillingPortalSession = async (req, res, next) => {
 };
 
 exports.handleWebhook = async (req, res, next) => {
-  // let event;
-  // if (process.env.NODE_ENV === "development") {
-  //   event = JSON.parse(req.body); // Use raw body without verifying the signature
-  // } else {
-  //   const sig = req.headers["stripe-signature"];
-  //   let event;
-
-  //   try {
-  //     event = stripe.webhooks.constructEvent(
-  //       req.body,
-  //       sig,
-  //       process.env.STRIPE_WEBHOOK_SECRET
-  //     );
-  //   } catch (err) {
-  //     console.error("Webhook signature verification failed:", err.message);
-  //     return res.status(400).send(`Webhook Error: ${err.message}`);
-  //   }
-  // }
-
   const sig = req.headers["stripe-signature"];
   let event;
 
