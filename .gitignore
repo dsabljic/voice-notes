@@ -148,3 +148,4 @@ uploads/
 *.png
 *.sql
 .vscode
+mock_*.json
