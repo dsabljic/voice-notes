@@ -149,3 +149,4 @@ uploads/
 *.sql
 .vscode
 mock_*.json
+/api-test
