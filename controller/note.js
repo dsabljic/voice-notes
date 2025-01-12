@@ -97,6 +97,7 @@ exports.createNote = async (req, res, next) => {
       }
       if (isRecording) {
         audioDuration = await getAudioDuration(audioFilePath);
+        console.log(`audio duration: ${audioDuration}`);
       }
       if (recordingTimeLeft - audioDuration < 0) {
         // doesn't have any recording time left
@@ -122,7 +123,6 @@ exports.createNote = async (req, res, next) => {
       console.error(error);
     }
 
-    // let newNote;
     let content;
 
     if (type === "transcription") {
@@ -223,8 +223,19 @@ const createNewNote = async (title, content, type, userId) => {
 
 const getAudioDuration = async (filePath) => {
   try {
+    console.log(`file path: ${filePath}`);
     const mm = await loadMusicMetadata();
     const metadata = await mm.parseFile(filePath);
+
+    if (!metadata.format.duration) {
+      console.log("No duration in metadata, using fallback calculation");
+      const stats = await fs.stat(filePath);
+      // Assuming 128kbps audio (16KB per second)
+      const estimatedDuration = Math.floor(stats.size / (16 * 1024));
+      console.log(estimatedDuration);
+      return estimatedDuration;
+    }
+
     return Math.floor(metadata.format.duration);
   } catch (err) {
     console.error("Error getting audio duration:", err);

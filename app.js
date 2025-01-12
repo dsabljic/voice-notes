@@ -27,7 +27,7 @@ const app = express();
 // );
 
 app.use(helmet());
-// app.use(compression()) // usually provided by the hosting service provider
+// app.use(compression()) // note: usually provided by the hosting service provider so nws
 // app.use(morgan("combined", { stream: accessLogStream })); // provided by some hosting service providers
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -41,6 +41,7 @@ const fileFilter = (req, file, cb) => {
     "audio/wav",
     "audio/wave",
     "video/mp4",
+    "audio/webm",
   ];
   if (!allowedTypes.includes(file.mimetype)) {
     const error = new Error(
