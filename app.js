@@ -10,6 +10,7 @@ const sequelize = require("./util/database");
 const noteRoutes = require("./routes/note");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
+const planRoutes = require("./routes/plan");
 const paymentRoutes = require("./routes/payment");
 const errorHandler = require("./middleware/error-handler");
 const paymentController = require("./controller/payment");
@@ -84,6 +85,7 @@ app.use("/notes", noteRoutes);
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/payment", paymentRoutes);
+app.use("/plans", planRoutes);
 
 app.use(errorHandler);
 
