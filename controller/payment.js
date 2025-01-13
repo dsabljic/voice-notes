@@ -25,6 +25,14 @@ exports.createCheckoutSession = async (req, res, next) => {
       return throwError(404, "User not found", next);
     }
 
+    // Check if user already has a subscription
+    const existingSubscription = await Subscription.findOne({
+      where: { userId: user.id },
+      include: [Plan],
+    });
+
+    let session;
+
     if (!user.stripeCustomerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -34,7 +42,14 @@ exports.createCheckoutSession = async (req, res, next) => {
       await user.save();
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // If there's an existing subscription, cancel it first
+    if (existingSubscription?.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(
+        existingSubscription.stripeSubscriptionId
+      );
+    }
+
+    session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       customer: user.stripeCustomerId,
@@ -45,37 +60,14 @@ exports.createCheckoutSession = async (req, res, next) => {
         },
       ],
       success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/payment-cancel`,
+      cancel_url: `${process.env.CLIENT_URL}/`,
+      allow_promotion_codes: true,
     });
+
     res.status(200).json({ url: session.url, sessionId: session.id });
   } catch (err) {
     console.error("Error in createCheckoutSession:", err);
     return throwError(500, "Failed to create checkout session", next);
-  }
-};
-
-exports.createBillingPortalSession = async (req, res, next) => {
-  try {
-    const userId = req.userId;
-
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return throwError(404, "User not found", next);
-    }
-
-    if (!user.stripeCustomerId) {
-      return throwError(400, "User does not have a Stripe customer ID", next);
-    }
-
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
-      return_url: `${process.env.CLIENT_URL}/billing-portal-return`,
-    });
-
-    res.status(200).json({ url: portalSession.url });
-  } catch (err) {
-    console.error("Error creating billing portal session:", err);
-    return throwError(500, "Failed to create billing portal session", next);
   }
 };
 
@@ -100,10 +92,13 @@ exports.handleWebhook = async (req, res, next) => {
         await handleSubscriptionUpdate(event.data.object);
         break;
       case "customer.subscription.updated":
-        console.log("subscription update placeholder");
+        await handleSubscriptionUpdate(event.data.object);
         break;
       case "customer.subscription.deleted":
         await handleSubscriptionCancellation(event.data.object);
+        break;
+      case "invoice.payment_succeeded":
+        await handleInvoicePaymentSucceeded(event.data.object);
         break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
@@ -116,6 +111,23 @@ exports.handleWebhook = async (req, res, next) => {
   }
 };
 
+async function handleInvoicePaymentSucceeded(invoice) {
+  console.log("invoice.payment_succeeded received");
+  if (invoice.billing_reason === "subscription_cycle") {
+    const subscription = await Subscription.findOne({
+      where: { stripeSubscriptionId: invoice.subscription },
+      include: [Plan],
+    });
+
+    if (subscription) {
+      subscription.uploadsLeft = subscription.plan.maxUploads;
+      subscription.recordingTimeLeft = subscription.plan.maxRecordingTime;
+      subscription.renewalDate = new Date(invoice.period_end * 1000);
+      await subscription.save();
+    }
+  }
+}
+
 async function handleSubscriptionUpdate(stripeSubscription) {
   const { customer, items } = stripeSubscription;
 
@@ -126,7 +138,6 @@ async function handleSubscriptionUpdate(stripeSubscription) {
     }
 
     const priceId = items.data[0].price.id;
-
     const plan = await Plan.findOne({ where: { stripePriceId: priceId } });
     if (!plan) {
       throw new Error(`No plan found for Stripe price: ${priceId}`);
@@ -134,18 +145,21 @@ async function handleSubscriptionUpdate(stripeSubscription) {
 
     const subscription = await Subscription.findOne({
       where: { userId: user.id },
+      include: [Plan],
     });
 
     if (subscription) {
-      subscription.planId = plan.id;
-      subscription.stripeSubscriptionId = stripeSubscription.id;
+      // Simply update to new plan limits
       subscription.uploadsLeft = plan.maxUploads;
       subscription.recordingTimeLeft = plan.maxRecordingTime;
+      subscription.planId = plan.id;
+      subscription.stripeSubscriptionId = stripeSubscription.id;
       subscription.renewalDate = new Date(
         stripeSubscription.current_period_end * 1000
       );
       await subscription.save();
     } else {
+      // New subscription
       await Subscription.create({
         userId: user.id,
         planId: plan.id,
@@ -194,3 +208,28 @@ async function handleSubscriptionCancellation(stripeSubscription) {
     throw err;
   }
 }
+
+exports.createBillingPortalSession = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return throwError(404, "User not found", next);
+    }
+
+    if (!user.stripeCustomerId) {
+      return throwError(400, "User does not have a Stripe customer ID", next);
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${process.env.CLIENT_URL}/`,
+    });
+
+    res.status(200).json({ url: portalSession.url });
+  } catch (err) {
+    console.error("Error creating billing portal session:", err);
+    return throwError(500, "Failed to create billing portal session", next);
+  }
+};
