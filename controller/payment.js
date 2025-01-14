@@ -129,7 +129,16 @@ async function handleInvoicePaymentSucceeded(invoice) {
 }
 
 async function handleSubscriptionUpdate(stripeSubscription) {
+  console.log("subscripiton update");
+  console.log(stripeSubscription);
   const { customer, items } = stripeSubscription;
+
+  if (
+    stripeSubscription.cancel_at_period_end &&
+    stripeSubscription.canceled_at
+  ) {
+    return;
+  }
 
   try {
     const user = await User.findOne({ where: { stripeCustomerId: customer } });
