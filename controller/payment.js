@@ -60,7 +60,7 @@ exports.createCheckoutSession = async (req, res, next) => {
         },
       ],
       success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/`,
+      cancel_url: `${process.env.CLIENT_URL}/dashboard`,
       allow_promotion_codes: true,
     });
 
