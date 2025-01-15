@@ -25,7 +25,6 @@ exports.createCheckoutSession = async (req, res, next) => {
       return throwError(404, "User not found", next);
     }
 
-    // Check if user already has a subscription
     const existingSubscription = await Subscription.findOne({
       where: { userId: user.id },
       include: [Plan],
@@ -57,7 +56,6 @@ exports.createCheckoutSession = async (req, res, next) => {
       allow_promotion_codes: true,
     };
 
-    // If there's an existing subscription, set up subscription update
     if (existingSubscription?.stripeSubscriptionId) {
       sessionConfig.subscription_data = {
         metadata: {
@@ -95,7 +93,6 @@ exports.handleWebhook = async (req, res, next) => {
     switch (event.type) {
       case "checkout.session.completed":
         const session = event.data.object;
-        // Get the subscription from the session
         const subscription = await stripe.subscriptions.retrieve(
           session.subscription
         );
@@ -190,27 +187,23 @@ async function handleSubscriptionUpdate(stripeSubscription) {
     });
 
     if (subscription) {
-      // Check if this is a reactivation
       const isReactivation =
         subscription.stripeSubscriptionId === stripeSubscription.id &&
         !stripeSubscription.cancel_at_period_end &&
         subscription.plan.id === plan.id;
 
-      // Only update limits if this is NOT a reactivation
       if (!isReactivation) {
         subscription.uploadsLeft = plan.maxUploads;
         subscription.recordingTimeLeft = plan.maxRecordingTime;
         subscription.planId = plan.id;
       }
 
-      // Always update these fields
       subscription.stripeSubscriptionId = stripeSubscription.id;
       subscription.renewalDate = new Date(
         stripeSubscription.current_period_end * 1000
       );
       await subscription.save();
     } else {
-      // New subscription
       await Subscription.create({
         userId: user.id,
         planId: plan.id,
