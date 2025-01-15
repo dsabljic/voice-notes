@@ -42,14 +42,7 @@ exports.createCheckoutSession = async (req, res, next) => {
       await user.save();
     }
 
-    // If there's an existing subscription, cancel it first
-    if (existingSubscription?.stripeSubscriptionId) {
-      await stripe.subscriptions.cancel(
-        existingSubscription.stripeSubscriptionId
-      );
-    }
-
-    session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       mode: "subscription",
       payment_method_types: ["card"],
       customer: user.stripeCustomerId,
@@ -62,7 +55,19 @@ exports.createCheckoutSession = async (req, res, next) => {
       success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,
       allow_promotion_codes: true,
-    });
+    };
+
+    // If there's an existing subscription, set up subscription update
+    if (existingSubscription?.stripeSubscriptionId) {
+      sessionConfig.subscription_data = {
+        metadata: {
+          old_subscription: existingSubscription.stripeSubscriptionId,
+          action: "update",
+        },
+      };
+    }
+
+    session = await stripe.checkout.sessions.create(sessionConfig);
 
     res.status(200).json({ url: session.url, sessionId: session.id });
   } catch (err) {
@@ -88,6 +93,16 @@ exports.handleWebhook = async (req, res, next) => {
 
   try {
     switch (event.type) {
+      case "checkout.session.completed":
+        const session = event.data.object;
+        // Get the subscription from the session
+        const subscription = await stripe.subscriptions.retrieve(
+          session.subscription
+        );
+        if (subscription.metadata?.action === "update") {
+          await handleSubscriptionChange(subscription);
+        }
+        break;
       case "customer.subscription.created":
         await handleSubscriptionUpdate(event.data.object);
         break;
@@ -111,6 +126,23 @@ exports.handleWebhook = async (req, res, next) => {
   }
 };
 
+async function handleSubscriptionChange(subscription) {
+  const oldSubscriptionId = subscription.metadata.old_subscription;
+
+  try {
+    if (oldSubscriptionId) {
+      // or just delete it (doesn't really make a difference since we're just
+      // replacing the existing credits with the new ones aka there's no credit transfer)
+      await stripe.subscriptions.update(oldSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    }
+  } catch (err) {
+    console.error("Error handling subscription change:", err);
+    throw err;
+  }
+}
+
 async function handleInvoicePaymentSucceeded(invoice) {
   console.log("invoice.payment_succeeded received");
   if (invoice.billing_reason === "subscription_cycle") {
@@ -129,7 +161,7 @@ async function handleInvoicePaymentSucceeded(invoice) {
 }
 
 async function handleSubscriptionUpdate(stripeSubscription) {
-  console.log("subscripiton update");
+  console.log("subscription update");
   console.log(stripeSubscription);
   const { customer, items } = stripeSubscription;
 
@@ -158,10 +190,20 @@ async function handleSubscriptionUpdate(stripeSubscription) {
     });
 
     if (subscription) {
-      // Simply update to new plan limits
-      subscription.uploadsLeft = plan.maxUploads;
-      subscription.recordingTimeLeft = plan.maxRecordingTime;
-      subscription.planId = plan.id;
+      // Check if this is a reactivation
+      const isReactivation =
+        subscription.stripeSubscriptionId === stripeSubscription.id &&
+        !stripeSubscription.cancel_at_period_end &&
+        subscription.plan.id === plan.id;
+
+      // Only update limits if this is NOT a reactivation
+      if (!isReactivation) {
+        subscription.uploadsLeft = plan.maxUploads;
+        subscription.recordingTimeLeft = plan.maxRecordingTime;
+        subscription.planId = plan.id;
+      }
+
+      // Always update these fields
       subscription.stripeSubscriptionId = stripeSubscription.id;
       subscription.renewalDate = new Date(
         stripeSubscription.current_period_end * 1000
