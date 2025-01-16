@@ -36,28 +36,54 @@ By limiting the scope of this MVP I want to:
 
 ### How to run the project
 
-1. **Clone the repository**:
+#### Clone the repository
 
    ```bash
    git clone https://github.com/dsabljic/voice-notes.git
    ```
 
-2. **Install dependencies**:
+#### Install dependencies
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-3. **Run the development servers**:
+#### Run the development servers
 
-   - Start the backend (Node.js):
-     ```bash
-     node app.js
-     ```
-   - Start the frontend (React):
-     ```bash
-     npm run dev
-     ```
+- Start the backend (Node.js):
+  ```bash
+  node app.js
+  ```
+- Start the frontend (React) after cloning the [frontend](https://github.com/dsabljic/voice-notes-frontend) project and running `npm install` there:
+  ```bash
+  npm run dev
+  ```
+  
+#### Sidenote
 
-4. **Access the app**:
-   Navigate to `http://localhost:5173` to use the application or test the API endpoints at `http://localhost:3000`.
+Right now the project requires you to create products (plans) manually on the Stripe dashboard (admin dashboard coming soon). After running the server for the first time with the sequelize.sync({ force: true }) the database will be initialized (after that you should comment out the sync({ force: true }) and call sync without args as shown in app.js) and you can add you plans like this:
+
+```sql
+INSERT INTO plan (planType, price, maxUploads, maxRecordingTime)
+VALUES ('free', 0.00, 5, 600);
+
+INSERT INTO plan (planType, price, maxUploads, maxRecordingTime, stripeProductId, stripePriceId)
+VALUES ('standard', 5.99, 15, 3600, 'prod_stripe_productId', 'price_stripe_priceId'); -- 1 hour = 3600 seconds
+
+INSERT INTO plan (planType, price, maxUploads, maxRecordingTime, stripeProductId, stripePriceId)
+VALUES ('pro', 7.99, 30, 10800, 'prod_stripe_productId', 'price_stripe_priceId');
+```
+
+If you want to try out the Stripe functionality and listen to events run the server and in another terminal run:
+
+```bash
+stripe listen --forward-to localhost:3000/payment/webhook
+```
+
+#### Access the app
+
+Navigate to `http://localhost:5173` (frontend) to use the application or test the API endpoints at `http://localhost:3000`.
+
+### ER diagram
+
+![image](https://github.com/user-attachments/assets/e0a931e2-62c0-4fd6-91f4-7b4c85504d65)
