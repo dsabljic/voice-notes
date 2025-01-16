@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-This project is an MVP for a SaaS application that allows users to record their voice notes and transform them into various textual forms like:
+This project is an MVP for a SaaS application that allows users to record their voice notes, upload audio files and transform them into various textual forms, such as notes of the following types:
 
 - **Transcriptions**: A cleaned-up script with punctuation.
 - **Summaries**: A concise note summarizing the core ideas of the voice note.
@@ -25,6 +25,7 @@ By limiting the scope of this MVP I want to:
 ### Features
 
 - **Record voice notes**: Users can record voice notes directly in the app.
+- **Upload audio files**: Users can upload their audio files and create their notes that way.
 - **Get results**: The voice note can be transcribed, summarized, or converted into a list of ideas.
 
 ### Future Plans/TODO list
@@ -38,7 +39,7 @@ By limiting the scope of this MVP I want to:
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/yourusername/voice-note-saas.git
+   git clone https://github.com/dsabljic/voice-notes.git
    ```
 
 2. **Install dependencies**:
