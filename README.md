@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-This project is an MVP for a SaaS application that allows users to record their voice notes, upload audio files and transform them into various textual forms, such as notes of the following types:
+This project is an MVP for a micro SaaS application that allows users to record their voice notes, upload audio files and transform them into various textual forms, such as notes of the following types:
 
 - **Transcriptions**: A cleaned-up script with punctuation.
 - **Summaries**: A concise note summarizing the core ideas of the voice note.
