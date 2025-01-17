@@ -15,13 +15,6 @@ This project is an MVP for a SaaS application that allows users to record their 
 - **Frontend**: React & Tailwind CSS
 - **Backend**: Node.js & Express.js
 
-<!-- ### Reason for MVP Scope
-At this stage, the focus of the project is to build a working MVP without user authentication, authorization, or payments. The decision to keep these out of the MVP is to align with my current learning journey in Node.js/Express, which is still covering foundational topics.
-
-By limiting the scope of this MVP I want to:
-- Apply what I am currently learning in the aforementioned course.
-- Create a simple, functional version of the full stack app without diving into topics like authentication and payment integration, which will be added later as I advance through the course. -->
-
 ### Features
 
 - **Record voice notes**: Users can record voice notes directly in the app.
@@ -30,7 +23,7 @@ By limiting the scope of this MVP I want to:
 
 ### Future plans/TODO list
 
-- [x] **Add payments**: Allow users to access extended features based on the purchase plan they select.
+- [x] **Payments**: Allow users to access extended features based on the purchase plan they select.
 - [ ] **Admin dashboard**: Add admin functionality to add new plans and manage users manually from the dashboard
 - [ ] **Finish automated tests**: Add unit tests for to ensure reliability during future development.
 - [ ] **Deployment**: Set up and deploy the API on VPS
