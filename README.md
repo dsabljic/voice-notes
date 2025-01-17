@@ -1,4 +1,4 @@
-# Voice Note SaaS - MVP
+# Voice Notes - SaaS MVP
 
 [frontend](https://github.com/dsabljic/voice-notes-frontend)
 
