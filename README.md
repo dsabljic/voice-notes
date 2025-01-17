@@ -55,7 +55,7 @@ npm install
   
 #### Sidenote
 
-Right now the project requires you to create products (plans) manually on the Stripe dashboard (admin dashboard coming soon). After running the server for the first time with the sequelize.sync({ force: true }) the database will be initialized (after that you should comment out the sync({ force: true }) and call sync without args as shown in app.js) and you can add you plans like this:
+Right now the project requires you to create products (plans) manually on the Stripe dashboard (admin dashboard coming soon). After running the server for the first time with the sequelize.sync({ force: true }) (this option is for development purposes only) the database will be initialized (after that you should comment out the sync({ force: true }) and call sync without args as shown in app.js) and you can add you plans like this:
 
 ```sql
 INSERT INTO plan (planType, price, maxUploads, maxRecordingTime)
