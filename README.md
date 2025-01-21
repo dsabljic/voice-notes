@@ -13,7 +13,7 @@ This project is an MVP for a micro SaaS application that allows users to record 
 ### Tech Stack
 
 - **Frontend**: React & Tailwind CSS
-- **Backend**: Node.js & Express.js
+- **Backend**: Node.js & Express.js (with SQLite database and Stripe payments)
 
 ### Features
 
