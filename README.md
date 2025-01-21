@@ -20,10 +20,11 @@ This project is an MVP for a micro SaaS application that allows users to record 
 - **Record voice notes**: Users can record voice notes directly in the app.
 - **Upload audio files**: Users can upload their audio files and create their notes that way.
 - **Get results**: The voice note can be transcribed, summarized, or converted into a list of ideas.
+- **Upgrade plan**: Users can upgrade their plan to get more credits.
 
 ### Future plans/TODO list
 
-- [x] **Payments**: Allow users to access extended features based on the purchase plan they select.
+- [x] **Payments**: Allow users to access more credits based on the purchase plan they select.
 - [ ] **Admin dashboard**: Add admin functionality to add new plans and manage users manually from the dashboard
 - [ ] **Finish automated tests**: Add unit tests for to ensure reliability during future development.
 - [ ] **Deployment**: Set up and deploy the API on VPS
