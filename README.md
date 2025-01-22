@@ -43,6 +43,17 @@ This project is an MVP for a micro SaaS application that allows users to record 
 npm install
 ```
 
+#### Create a .env file with the following contents
+
+```env
+LEMONFOX_API_KEY=...
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+JWT_SECRET=...
+CLIENT_URL=http://localhost:5173
+NODE_ENV=...
+```
+
 #### Run the development servers
 
 - Start the backend (Node.js):
@@ -63,7 +74,7 @@ INSERT INTO plan (planType, price, maxUploads, maxRecordingTime)
 VALUES ('free', 0.00, 5, 600);
 
 INSERT INTO plan (planType, price, maxUploads, maxRecordingTime, stripeProductId, stripePriceId)
-VALUES ('standard', 5.99, 15, 3600, 'prod_stripe_productId', 'price_stripe_priceId'); -- 1 hour = 3600 seconds
+VALUES ('standard', 5.99, 15, 3600, 'prod_stripe_productId', 'price_stripe_priceId');
 
 INSERT INTO plan (planType, price, maxUploads, maxRecordingTime, stripeProductId, stripePriceId)
 VALUES ('pro', 7.99, 30, 10800, 'prod_stripe_productId', 'price_stripe_priceId');
